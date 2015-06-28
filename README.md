@@ -1,3 +1,17 @@
+Embedded C Client Library - Introduction
+========================================
+
+Embedded C client for interacting with the Internet of Things
+Foundation.
+
+Dependencies
+------------
+
+1.  [Embedded C MQTT Client]
+
+  [Embedded C MQTT Client]: http://www.eclipse.org/paho/clients/c/embedded/
+  
+
 Embedded C Client Library - Devices
 ===================================
 
