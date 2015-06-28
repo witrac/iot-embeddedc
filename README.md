@@ -123,7 +123,7 @@ void myCallback (char* commandName, char* format, void* payload)
 **Note** : *yield* function must be called periodically to receive commands.
 
 Publishing events
-=================
+------------------
 
 Events can be published by using
 
@@ -143,7 +143,7 @@ Events can be published by using
 ```
 
 Disconnect Client
-=================
+------------------
 
 Disconnects the client and releases the connections
 
