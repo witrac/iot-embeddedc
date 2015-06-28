@@ -38,7 +38,7 @@ the *device.cfg* file
 
     [root@localhost ~]# vi device.cfg
     [root@localhost ~]# ./samplePublish
-    Connecting to registered service with org eu8zyd
+    Connecting to registered service with org xxxxx
     Publishing the event stat with rc  0
     Publishing the event stat with rc  0
     Publishing the event stat with rc  0
