@@ -4,15 +4,18 @@ Embedded C Client Library - Samples
 Usage
 -----
 
-Either run *make* or use *build.sh* to compile and build the samples.
+Using the cd command in the command prompt, navigate to the samples directory of your installation of the Embedded C client library.
+
+Go to the samples directory to run the sample. Either run make or use build.sh to compile and build the samples.
 
     [root@localhost ~]# make
 
 helloWorld.c
 ------------
 
-This is sample application to demonstrate the quickstart in IoT
-Foundation. Provide the MAC Address
+This sample application demonstrates the Internet of Things Foundation Quickstart service. The sample application connects to the Quickstart service and sends event data. To connect to the Quickstart service, you must provide an unique identifier for the device.
+
+This sample is a great place to get started with the Internet of Things Foundation Service using Quickstart.
 
     [root@localhost ~]# ./helloWorld 001122334455
     Connection Successful. Press Ctrl+C to quit
@@ -30,11 +33,9 @@ Foundation. Provide the MAC Address
 sampleDevice.c
 --------------
 
-This is sample application to demonstrate the registered mode in IoT
-Foundation. With registered mode, the devices can both publish events
-and receive commands. You need to register for a device at
-<https://internetofthings.ibmcloud.com/#/> and copy the credentials in
-the *device.cfg* file
+This sample application demonstrates the registered mode in Internet of Things Foundation. This sample connects to the Internet of Things Foundation registered service. On registered mode, the devices can both publish events and receive commands.
+
+But for running this sample, you must first register the device at <https://internetofthings.ibmcloud.com/#/> and copy the credentials in the *device.cfg* file. Using this sample, users can publish events and receive commands from the Internet of Things Foundation service.
 
     [root@localhost ~]# vi device.cfg
     [root@localhost ~]# ./samplePublish
