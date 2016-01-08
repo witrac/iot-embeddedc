@@ -11,7 +11,9 @@
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *    Jeffrey Dare - initial implementation and API implementation
+ *    Jeffrey Dare            - initial implementation and API implementation
+ *    Sathiskumar Palaniappan - Added support to create multiple Iotfclient 
+ *                              instances within a single process
  *******************************************************************************/
 
 #include <stdio.h>
@@ -21,9 +23,6 @@
 #include <sys/time.h>
 #include "iotfclient.h"
 
-unsigned char buf[100];
-unsigned char readbuf[100];
-int isQuickstart = 0 ;
 //Command Callback
 commandCallback cb;
 
@@ -113,7 +112,7 @@ int connectiotf(Iotfclient *client)
 
 	int rc = 0;
 	if(strcmp(client->config.org,"quickstart") == 0){
-		isQuickstart = 1 ;
+		client->isQuickstart = 1 ;
 	}
 
 	const char* messagingUrl = ".messaging.internetofthings.ibmcloud.com";
@@ -130,25 +129,25 @@ int connectiotf(Iotfclient *client)
 
 	NewNetwork(&client->n);
 	ConnectNetwork(&client->n, hostname, port);
-	MQTTClient(&client->c, &client->n, 1000, buf, 100, readbuf, 100);
+	MQTTClient(&client->c, &client->n, 1000, client->buf, 100, client->readbuf, 100);
  
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;       
 	data.willFlag = 0;
 	data.MQTTVersion = 3;
 	data.clientID.cstring = clientId;
 
-	if(!isQuickstart) {
+	if(!client->isQuickstart) {
 		printf("Connecting to registered service with org %s\n", client->config.org);
 		data.username.cstring = "use-token-auth";
 		data.password.cstring = client->config.authtoken;
 	}
 
-	data.keepAliveInterval = 10;
+	data.keepAliveInterval = 60;
 	data.cleansession = 1;
 	
 	rc = MQTTConnect(&client->c, &data);
 
-	if(!isQuickstart) {
+	if(!client->isQuickstart) {
 		//Subscibe to all commands
 		subscribeCommands(client);
 	}

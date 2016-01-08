@@ -11,13 +11,16 @@
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *    Jeffrey Dare - initial implementation and API implementation
+ *    Jeffrey Dare            - initial implementation and API implementation
+ *    Sathiskumar Palaniappan - Added support to create multiple Iotfclient
+ *                              instances within a single process
  *******************************************************************************/
 
 #ifndef IOTCLIENT_H_
 #define IOTCLIENT_H_
 
 #include "MQTTClient.h"
+#include <ctype.h>
 
 // all failure return codes must be negative(extending from mqttclient)
 enum errorCodes { CONFIG_FILE_ERROR = -3, MISSING_INPUT_PARAM = -4 };
@@ -37,6 +40,10 @@ struct iotfclient
 	Network n;
 	Client c;
 	struct config config;
+
+	unsigned char buf[100];
+        unsigned char readbuf[100];
+        int isQuickstart;
 };
 
 typedef struct iotfclient Iotfclient;
