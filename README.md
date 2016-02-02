@@ -121,6 +121,7 @@ The IoTF *connectiotf* function return codes
 * MQTTCLIENT_MAX_MESSAGES_INFLIGHT   -4
 * MQTTCLIENT_BAD_UTF8_STRING   -5
 * MQTTCLIENT_BAD_QOS   -9
+* MQTTCLIENT_NOT_AUTHORIZED   5
 
 Handling commands
 -----------------
