@@ -74,6 +74,14 @@ auth-method=token
 auth-token=$token
 ```
 
+##### Return codes
+
+Following are the return codes in the *initialize* function
+
+* CONFIG_FILE_ERROR   -3
+* MISSING_INPUT_PARAM   -4
+
+
 Connect
 -------
 
@@ -102,6 +110,17 @@ Things Foundation by calling the *connectiotf* function
    }
    ....
 ```
+
+##### Return Codes
+
+The IoTF *connectiotf* function return codes
+
+* MQTTCLIENT_SUCCESS   0
+* MQTTCLIENT_FAILURE   -1
+* MQTTCLIENT_DISCONNECTED   -3
+* MQTTCLIENT_MAX_MESSAGES_INFLIGHT   -4
+* MQTTCLIENT_BAD_UTF8_STRING   -5
+* MQTTCLIENT_BAD_QOS   -9
 
 Handling commands
 -----------------
