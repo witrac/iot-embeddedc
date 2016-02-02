@@ -111,6 +111,7 @@ int connectiotf(Iotfclient *client)
 {
 
 	int rc = 0;
+	client->isQuickstart = 0;
 	if(strcmp(client->config.org,"quickstart") == 0){
 		client->isQuickstart = 1 ;
 	}
