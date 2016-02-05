@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015, 2016 IBM Corp.
+ * Copyright (c) 2016 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,9 +11,7 @@
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *    Jeffrey Dare            - initial implementation and API implementation
- *    Sathiskumar Palaniappan - Added support to create multiple Iotfclient 
- *                              instances within a single process
+ *    Jeffrey Dare            - initial implementation
  *******************************************************************************/
 
 #include <stdio.h>
@@ -21,7 +19,7 @@
 #include <memory.h>
 
 #include <sys/time.h>
-#include "iotfclient.h"
+#include "iotfgwclient.h"
 
 //Command Callback
 commandCallback cb;
@@ -31,19 +29,22 @@ char *trim(char *str);
 int get_config(char * filename, struct config * configstr);
 void messageArrived(MessageData* md);
 int length(char *str);
-int retry_connection(Iotfclient *client);
+int retry_connection(GatewayClient *client);
 int reconnect_delay(int i);
+
+char ** holder;
 
 
 /**
-* Function used to initialize the IBM Watson IoT client using the config file which is generated when you register your device
+* Function used to initialize the Watson IoT Gateway client using the config file which is generated when you register your device
+* @param client - Reference to the GatewayClient
 * @param configFilePath - File path to the configuration file 
 *
 * @return int return code
 * error codes
 * CONFIG_FILE_ERROR -3 - Config file not present or not in right format
 */
-int initialize_configfile(Iotfclient *client, char *configFilePath)
+int initializeGateway_configfile(GatewayClient *client, char *configFilePath)
 {
 	struct config configstr = {"", "", "", "", ""};
 
@@ -66,35 +67,39 @@ int initialize_configfile(Iotfclient *client, char *configFilePath)
 }
 
 /**
-* Function used to initialize the IBM Watson IoT client
+* Function used to initialize the Watson IoT Gateway client
+* @param client - Reference to the GatewayClient
 * @param org - Your organization ID
-* @param type - The type of your device
-* @param id - The ID of your device
+* @param type - The type of your Gateway
+* @param id - The ID of your Gateway
 * @param auth-method - Method of authentication (the only value currently supported is “token”)
 * @param auth-token - API key token (required if auth-method is “token”)
 *
 * @return int return code
+* error codes
+* MISSING_INPUT_PARAM -4 - Mandatory paramters missing
+* QUICKSTART_NOT_SUPPORTED -5 - Gateway is not supported in Quickstart
 */
-int initialize(Iotfclient *client, char *orgId, char *deviceType, char *deviceId, char *authmethod, char *authToken)
+int initializeGateway(GatewayClient *client, char *orgId, char *gwType, char *gwId, char *authmethod, char *authtoken)
 {
 
 	struct config configstr = {"", "", "", "", ""};
 
-	if(orgId==NULL || deviceType==NULL || deviceId==NULL) {
+	if(orgId==NULL || gwType==NULL || gwId==NULL) {
 		return MISSING_INPUT_PARAM;
 	}
 
 	strncpy(configstr.org, orgId, 15);
-	strncpy(configstr.type, deviceType, 50);
-	strncpy(configstr.id, deviceId, 50);
+	strncpy(configstr.type, gwType, 50);
+	strncpy(configstr.id, gwId, 50);
 
-	if((strcmp(orgId,"quickstart") != 0)) {
-		if(authmethod == NULL || authToken == NULL) {
-			return MISSING_INPUT_PARAM;
-		}
-		strncpy(configstr.authmethod, authmethod, 10);
-		strncpy(configstr.authtoken, authToken, 50);
+	if((strcmp(orgId,"quickstart") == 0)) {
+		printf("Quickstart mode is not supported in Gateway Client\n");
+		return QUICKSTART_NOT_SUPPORTED;
 	}
+
+	strncpy(configstr.authmethod, authmethod, 10);
+	strncpy(configstr.authtoken, authtoken, 50);
 
 	client->config = configstr;
 
@@ -102,19 +107,15 @@ int initialize(Iotfclient *client, char *orgId, char *deviceType, char *deviceId
 }
 
 /**
-* Function used to initialize the IBM Watson IoT client
-* @param client - Reference to the Iotfclient
+* Function used to Connect the Watson IoT Gateway client
+* @param client - Reference to the GatewayClient
 *
 * @return int return code
 */
-int connectiotf(Iotfclient *client)
+int connectGateway(GatewayClient *client)
 {
 
 	int rc = 0;
-	client->isQuickstart = 0;
-	if(strcmp(client->config.org,"quickstart") == 0){
-		client->isQuickstart = 1 ;
-	}
 
 	const char* messagingUrl = ".messaging.internetofthings.ibmcloud.com";
 
@@ -126,7 +127,7 @@ int connectiotf(Iotfclient *client)
     int port = 1883;
 
     char clientId[strlen(client->config.org) + strlen(client->config.type) + strlen(client->config.id) + 5];
-    sprintf(clientId, "d:%s:%s:%s", client->config.org, client->config.type, client->config.id);
+    sprintf(clientId, "g:%s:%s:%s", client->config.org, client->config.type, client->config.id);
 
 	NewNetwork(&client->n);
 	ConnectNetwork(&client->n, hostname, port);
@@ -137,27 +138,26 @@ int connectiotf(Iotfclient *client)
 	data.MQTTVersion = 3;
 	data.clientID.cstring = clientId;
 
-	if(!client->isQuickstart) {
-		printf("Connecting to registered service with org %s\n", client->config.org);
-		data.username.cstring = "use-token-auth";
-		data.password.cstring = client->config.authtoken;
-	}
+	printf("Connecting to registered service with org %s\n", client->config.org);
+	data.username.cstring = "use-token-auth";
+	data.password.cstring = client->config.authtoken;
 
-	data.keepAliveInterval = 60;
+	data.keepAliveInterval = 10;
 	data.cleansession = 1;
 	
 	rc = MQTTConnect(&client->c, &data);
 
-	if(!client->isQuickstart) {
-		//Subscibe to all commands
-		subscribeCommands(client);
-	}
+	//Subscibe to all commands in gateway by default
+	subscribeToGatewayCommands(client);
 
 	return rc;
 }
 
 /**
-* Function used to Publish events from the device to the IBM Watson IoT service
+* Function used to Publish events from the device to the Watson IoT
+* @param client - Reference to the GatewayClient
+* @param deviceType - The type of your device
+* @param deviceId - The ID of your deviceId
 * @param eventType - Type of event to be published e.g status, gps
 * @param eventFormat - Format of the event e.g json
 * @param data - Payload of the event
@@ -165,15 +165,50 @@ int connectiotf(Iotfclient *client)
 *
 * @return int return code from the publish
 */
-
-int publishEvent(Iotfclient *client, char *eventType, char *eventFormat, unsigned char* data, enum QoS qos)
+int publishDeviceEvent(GatewayClient *client, char *deviceType, char *deviceId, char *eventType, char *eventFormat, unsigned char* data, enum QoS qos)
 {
 	int rc = -1;
 
-	char publishTopic[strlen(eventType) + strlen(eventFormat) + 16];
+	char publishTopic[strlen(eventType) + strlen(eventFormat) + strlen(deviceType) + strlen(deviceId)+25];
 
-	sprintf(publishTopic, "iot-2/evt/%s/fmt/%s", eventType, eventFormat);
+	sprintf(publishTopic, "iot-2/type/%s/id/%s/evt/%s/fmt/%s", deviceType, deviceId, eventType, eventFormat);
+	
+	MQTTMessage pub;
 
+	pub.qos = qos;
+	pub.retained = '0';
+	pub.payload = data;
+	pub.payloadlen = strlen(data);
+
+	rc = MQTTPublish(&client->c, publishTopic , &pub);
+
+	if(rc != SUCCESS) {
+		printf("connection lost.. %d \n",rc);
+		retry_connection(client);
+		rc = MQTTPublish(&client->c, publishTopic , &pub);
+	}
+	
+	return rc;
+
+}
+
+/**
+* Function used to Publish events from the device to the Watson IoT
+* @param client - Reference to the GatewayClient
+* @param eventType - Type of event to be published e.g status, gps
+* @param eventFormat - Format of the event e.g json
+* @param data - Payload of the event
+* @param QoS - qos for the publish event. Supported values : QOS0, QOS1, QOS2
+*
+* @return int return code from the publish
+*/
+int publishGatewayEvent(GatewayClient *client, char *eventType, char *eventFormat, unsigned char* data, enum QoS qos)
+{
+	int rc = -1;
+
+	char publishTopic[strlen(eventType) + strlen(eventFormat) + strlen(client->config.id) + strlen(client->config.type)+25];
+
+	sprintf(publishTopic, "iot-2/type/%s/id/%s/evt/%s/fmt/%s", client->config.type, client->config.id, eventType, eventFormat);
 	MQTTMessage pub;
 
 	pub.qos = qos;
@@ -199,22 +234,47 @@ int publishEvent(Iotfclient *client, char *eventType, char *eventFormat, unsigne
 * @param cb - A Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* commandName, char* payload)
 * @return int return code
 */
-void setCommandHandler(Iotfclient *client, commandCallback handler)
+void setGatewayCommandHandler(GatewayClient *client, commandCallback handler)
 {
 	cb = handler;
 }
 
 /**
-* Function used to subscribe to all commands. This function is by default called when in registered mode.
+* Function used to subscribe to all commands for gateway.
 *
 * @return int return code
 */
-int subscribeCommands(Iotfclient *client) 
+int subscribeToGatewayCommands(GatewayClient *client) 
 {
 	int rc = -1;
 
-	rc = MQTTSubscribe(&client->c, "iot-2/cmd/+/fmt/+", QOS0, messageArrived);
+	char* subscribeTopic = NULL;
 
+	subscribeTopic = (char*) malloc(strlen(client->config.id) + strlen(client->config.type) + 28);
+
+	sprintf(subscribeTopic, "iot-2/type/%s/id/%s/cmd/+/fmt/+", client->config.type, client->config.id);
+
+	rc = MQTTSubscribe(&client->c, subscribeTopic, QOS2, messageArrived);
+
+	return rc;
+}
+
+/**
+* Function used to subscribe to device commands for gateway.
+*
+* @return int return code
+*/
+int subscribeToDeviceCommands(GatewayClient *client, char* deviceType, char* deviceId, char* command, char* format, int qos) 
+{
+	int rc = -1;
+
+	char* subscribeTopic = NULL;
+	subscribeTopic = (char*)malloc(strlen(deviceType) + strlen(deviceId) + strlen(command) + strlen(format) + 26);
+
+	sprintf(subscribeTopic, "iot-2/type/%s/id/%s/cmd/%s/fmt/%s", deviceType, deviceId, command, format);
+
+	rc = MQTTSubscribe(&client->c, subscribeTopic, qos, messageArrived);
+	
 	return rc;
 }
 
@@ -223,7 +283,7 @@ int subscribeCommands(Iotfclient *client)
 * @param time_ms - Time in milliseconds
 * @return int return code
 */
-int yield(Iotfclient *client, int time_ms)
+int gatewayYield(GatewayClient *client, int time_ms)
 {
 	int rc = 0;
 	rc = MQTTYield(&client->c, time_ms);
@@ -235,18 +295,18 @@ int yield(Iotfclient *client, int time_ms)
 *
 * @return int return code
 */
-int isConnected(Iotfclient *client)
+int isGatewayConnected(GatewayClient *client)
 {
 	return client->c.isconnected;
 }
 
 /**
-* Function used to disconnect from the IBM Watson IoT service
+* Function used to disconnect from the IoTF service
 *
 * @return int return code
 */
 
-int disconnect(Iotfclient *client)
+int disconnectGateway(GatewayClient *client)
 {
 	int rc = 0;
 	rc = MQTTDisconnect(&client->c);
@@ -268,16 +328,22 @@ void messageArrived(MessageData* md)
 
 		void *payload = message->payload;
 
+		size_t payloadlen = message->payloadlen;
+		 
 		strtok(topic, "/");
 		strtok(NULL, "/");
 
+		char *type = strtok(NULL, "/");
+		strtok(NULL, "/");
+		char *id = strtok(NULL, "/");
+		strtok(NULL, "/");
 		char *commandName = strtok(NULL, "/");
 		strtok(NULL, "/");
 		char *format = strtok(NULL, "/");
 
 		free(topic);
 
-		(*cb)(commandName, format, payload);
+		(*cb)(type,id,commandName, format, payload,payloadlen);
 	}
 }
 
@@ -369,12 +435,12 @@ int length(char *str)
 }
 
 //Staggered retry
-int retry_connection(Iotfclient *client) 
+int retry_connection(GatewayClient *client) 
 {
 	int retry = 1;
 	printf("Attempting to connect\n");
 
-	while(connectiotf(client) != SUCCESS)
+	while(connectGateway(client) != SUCCESS)
 	{
 		printf("Retry Attempt #%d ", retry);
 		int delay = reconnect_delay(retry++);

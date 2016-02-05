@@ -54,7 +54,7 @@ typedef struct iotfclient Iotfclient;
 typedef void (*commandCallback)(char* commandName, char *format, void* payload);
 
 /**
-* Function used to initialize the IoTF client
+* Function used to initialize the Watson IoT client
 * @param client - Reference to the Iotfclient
 * @param org - Your organization ID
 * @param type - The type of your device
@@ -66,7 +66,7 @@ typedef void (*commandCallback)(char* commandName, char *format, void* payload);
 */
 int initialize(Iotfclient *client, char *orgId, char *deviceType, char *deviceId, char *authmethod, char *authtoken);
 /**
-* Function used to initialize the IoTF client using the config file which is generated when you register your device
+* Function used to initialize the IBM Watson IoT client using the config file which is generated when you register your device
 * @param client - Reference to the Iotfclient
 * @param configFilePath - File path to the configuration file 
 *
@@ -77,7 +77,7 @@ int initialize(Iotfclient *client, char *orgId, char *deviceType, char *deviceId
 int initialize_configfile(Iotfclient *client, char *configFilePath);
 
 /**
-* Function used to initialize the IoTF client
+* Function used to initialize the IBM Watson IoT client
 * @param client - Reference to the Iotfclient
 *
 * @return int return code
@@ -85,7 +85,7 @@ int initialize_configfile(Iotfclient *client, char *configFilePath);
 int connectiotf(Iotfclient *client);
 
 /**
-* Function used to Publish events from the device to the IoTF service
+* Function used to Publish events from the device to the IBM Watson IoT service
 * @param client - Reference to the Iotfclient
 * @param eventType - Type of event to be published e.g status, gps
 * @param eventFormat - Format of the event e.g json
@@ -130,7 +130,7 @@ int isConnected(Iotfclient *client);
 int yield(Iotfclient *client, int time_ms);
 
 /**
-* Function used to disconnect from the IoTF service
+* Function used to disconnect from the IBM Watson IoT service
 * @param client - Reference to the Iotfclient
 *
 * @return int return code
