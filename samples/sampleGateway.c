@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include "iotfgwclient.h"
+#include "gatewayclient.h"
 
 volatile int interrupt = 0;
 
@@ -26,14 +26,15 @@ void sigHandler(int signo) {
 	interrupt = 1;
 }
 
+//Command Handler
 void myCallback (char* type, char* id, char* commandName, char *format, void* payload, size_t payloadlen)
 {
 	printf("------------------------------------\n" );
-	printf("The command received :: %s\n", commandName);
-	printf("format : %s\n", format);
-	printf("Payload is : %s\n", (char *)payload);
 	printf("Type is : %s\n", type);
 	printf("Id is : %s\n", id);
+	printf("The command received :: %s\n", commandName);
+	printf("format : %s\n", format);
+	printf("Payload is : %.*s\n", (int)payloadlen, (char *)payload);
 	printf("------------------------------------\n" );
 }
 
@@ -63,21 +64,28 @@ int main(int argc, char const *argv[])
 		return 0;
 	}
 
+	//Registering the function "myCallback" as the command handler.
 	setGatewayCommandHandler(&client, myCallback);
+	// providing "+" will subscribe to all the command of all formats.
 	subscribeToDeviceCommands(&client, "raspi", "pi2", "+", "+", 0);
 
 	while(!interrupt) 
 	{
 		printf("Publishing the event stat with rc ");
+		//publishing gateway events
+		rc= publishGatewayEvent(&client, "status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
+		//publishing device events on behalf of a device
 		rc= publishDeviceEvent(&client, "raspi","device02","status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
-		// rc= publishGatewayEvent(&client, "status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
+		
 		printf(" %d\n", rc);
+		//Yield for receiving commands.
 		gatewayYield(&client, 1000);
 		sleep(1);
 	}
 
 	printf("Quitting!!\n");
 
+	//Be sure to disconnect the gateway at exit
 	disconnectGateway(&client);
 
 	return 0;

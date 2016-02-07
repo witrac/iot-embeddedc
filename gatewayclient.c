@@ -19,7 +19,7 @@
 #include <memory.h>
 
 #include <sys/time.h>
-#include "iotfgwclient.h"
+#include "gatewayclient.h"
 
 //Command Callback
 commandCallback cb;
@@ -32,8 +32,8 @@ int length(char *str);
 int retry_connection(GatewayClient *client);
 int reconnect_delay(int i);
 
-char ** holder;
-
+char* subscribeTopics[5];
+int subscribeCount = 0;
 
 /**
 * Function used to initialize the Watson IoT Gateway client using the config file which is generated when you register your device
@@ -256,6 +256,8 @@ int subscribeToGatewayCommands(GatewayClient *client)
 
 	rc = MQTTSubscribe(&client->c, subscribeTopic, QOS2, messageArrived);
 
+	subscribeTopics[subscribeCount++] = subscribeTopic;
+
 	return rc;
 }
 
@@ -269,11 +271,14 @@ int subscribeToDeviceCommands(GatewayClient *client, char* deviceType, char* dev
 	int rc = -1;
 
 	char* subscribeTopic = NULL;
+
 	subscribeTopic = (char*)malloc(strlen(deviceType) + strlen(deviceId) + strlen(command) + strlen(format) + 26);
 
 	sprintf(subscribeTopic, "iot-2/type/%s/id/%s/cmd/%s/fmt/%s", deviceType, deviceId, command, format);
 
 	rc = MQTTSubscribe(&client->c, subscribeTopic, qos, messageArrived);
+
+	subscribeTopics[subscribeCount++] = subscribeTopic;
 	
 	return rc;
 }
@@ -309,8 +314,16 @@ int isGatewayConnected(GatewayClient *client)
 int disconnectGateway(GatewayClient *client)
 {
 	int rc = 0;
+	int count;
 	rc = MQTTDisconnect(&client->c);
 	client->n.disconnect(&client->n);
+
+	//free memory
+	for(count = 0; count < subscribeCount ; count++) {
+		char* topic = subscribeTopics[count];
+		free(topic);
+	}
+	
 
 	return rc;
 

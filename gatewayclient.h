@@ -14,8 +14,8 @@
  *    Jeffrey Dare            - initial implementation
  *******************************************************************************/
 
-#ifndef IOTGWCLIENT_H_
-#define IOTGWCLIENT_H_
+#ifndef GATEWAYCLIENT_H_
+#define GATEWAYCLIENT_H_
 
 #include "MQTTClient.h"
 #include <ctype.h>
@@ -153,4 +153,4 @@ int gatewayYield(GatewayClient *client, int time_ms);
 */
 int disconnectGateway(GatewayClient *client);
 
-#endif /* IOTGWCLIENT_H_ */
+#endif /* GATEWAYCLIENT_H_ */
