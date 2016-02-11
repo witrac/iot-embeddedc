@@ -21,7 +21,7 @@ gcc  -Wall -fPIC -c -D_GNU_SOURCE -I./ -I./lib ./lib/MQTTUnsubscribeClient.c -o 
 echo ""
 echo "Linking libwiotgateway.so libwiotdevice.so"
 
-gcc -shared -Wl,-soname,libwiotgateway.so -lm -ldl -lpthread -o ./build/libwiotgateway.so gatewayclient.o mqttclient.o mqttlinux.o mqttformat.o  mqttpacket.o mqttdespublish.o mqttconnectclient.o mqttsubscribeclient.o mqttserpublish.o mqttconnectserver.o mqttsubscribeserver.o mqttunsubscribeserver.o mqttunsubscribeclient.o
+gcc -shared -Wl,-soname,libiotf.so -lm -ldl -lpthread -o ./build/libiotf.so gatewayclient.o mqttclient.o mqttlinux.o mqttformat.o  mqttpacket.o mqttdespublish.o mqttconnectclient.o mqttsubscribeclient.o mqttserpublish.o mqttconnectserver.o mqttsubscribeserver.o mqttunsubscribeserver.o mqttunsubscribeclient.o
 gcc -shared -Wl,-soname,libwiotdevice.so -lm -ldl -lpthread -o ./build/libwiotdevice.so iotfclient.o mqttclient.o mqttlinux.o mqttformat.o  mqttpacket.o mqttdespublish.o mqttconnectclient.o mqttsubscribeclient.o mqttserpublish.o mqttconnectserver.o mqttsubscribeserver.o mqttunsubscribeserver.o mqttunsubscribeclient.o
 echo ""
 echo "Removing temporary files..."
