@@ -19,7 +19,7 @@ gcc  -Wall -fPIC -c -D_GNU_SOURCE -I./ -I./lib ./lib/MQTTSubscribeServer.c -o mq
 gcc  -Wall -fPIC -c -D_GNU_SOURCE -I./ -I./lib ./lib/MQTTUnsubscribeServer.c -o mqttunsubscribeserver.o
 gcc  -Wall -fPIC -c -D_GNU_SOURCE -I./ -I./lib ./lib/MQTTUnsubscribeClient.c -o mqttunsubscribeclient.o
 echo ""
-echo "Linking libwiotgateway.so libwiotdevice.so"
+echo "Linking libiotf.so libwiotdevice.so"
 
 gcc -shared -Wl,-soname,libiotf.so -lm -ldl -lpthread -o ./build/libiotf.so gatewayclient.o mqttclient.o mqttlinux.o mqttformat.o  mqttpacket.o mqttdespublish.o mqttconnectclient.o mqttsubscribeclient.o mqttserpublish.o mqttconnectserver.o mqttsubscribeserver.o mqttunsubscribeserver.o mqttunsubscribeclient.o
 gcc -shared -Wl,-soname,libwiotdevice.so -lm -ldl -lpthread -o ./build/libwiotdevice.so iotfclient.o mqttclient.o mqttlinux.o mqttformat.o  mqttpacket.o mqttdespublish.o mqttconnectclient.o mqttsubscribeclient.o mqttserpublish.o mqttconnectserver.o mqttsubscribeserver.o mqttunsubscribeserver.o mqttunsubscribeclient.o
