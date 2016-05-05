@@ -4,14 +4,11 @@ rm -rf lib
 mkdir tmp
 mkdir lib
 cd tmp
-echo "downloading paho embedded-C...."
+echo "downloading paho mqtt...."
 curl -LO http://git.eclipse.org/c/paho/org.eclipse.paho.mqtt.embedded-c.git/snapshot/org.eclipse.paho.mqtt.embedded-c-1.0.0.tar.gz
 tar -xvf org.eclipse.paho.mqtt.embedded-c-1.0.0.tar.gz
 echo "downloading cJSON...."
 curl -LO https://github.com/DaveGamble/cJSON/archive/master.zip
-unzip master.zip
-echo "downloading iot-embeddedc...."
-curl -LO https://github.com/ibm-watson-iot/iot-embeddedc/archive/master.zip
 unzip master.zip
 cd org.eclipse.paho.mqtt.embedded-c-1.0.0/MQTTClient-C/src/
 sed -i 's/""/"MQTTLinux.h"/g' MQTTClient.h
