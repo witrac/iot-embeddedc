@@ -4,13 +4,26 @@ Embedded C Client Library - Introduction
 Embedded C client for interacting with the IBM Watson Internet of Things
 Platform.
 
+Installing the Dependencies
+---------------------------
+a. Run the setup.sh file in the iot-embeddedc directory.
+This script will install following Dependencies.
+
 Dependencies
 ------------
 
 1.  [Embedded C MQTT Client]
 
   [Embedded C MQTT Client]: http://www.eclipse.org/paho/clients/c/embedded/
+  Following version of paho MQTT library is used for this client library
+  http://git.eclipse.org/c/paho/org.eclipse.paho.mqtt.embedded-c.git/snapshot/org.eclipse.paho.mqtt.embedded-c-1.0.0.tar.gz
   
+2.  cJSON
+  https://github.com/DaveGamble/cJSON/archive/master.zip
+
+b. Copy the depencies into the lib directory after making necessary changes.
+
+If the dependencies were not able to be installed with the script on the device, manually pull the dependencies from the links mentioned above and follow the steps in the setup.sh file for making the necessary changes.
 
 Embedded C Client Library - Devices
 ===================================
@@ -498,11 +511,10 @@ IBM Watson Internet of Things Platform service
 #include "devicemanagementclient.h"
    ....
    ....
-   ManagedDevice client;
    //quickstart
-   rc = initialize_dm(&client,"quickstart","iotsample","001122334455",NULL,NULL);
+   rc = initialize_dm("quickstart","iotsample","001122334455",NULL,NULL);
    //registered
-   rc = initialize_dm(&client,"orgid","type","id","token","authtoken");
+   rc = initialize_dm("orgid","type","id","token","authtoken");
    ....
 ```
 
@@ -516,8 +528,7 @@ as a parameter.
    ....
    ....
    char *filePath = "./device.cfg";
-   ManagedDevice client;
-   rc = initialize_configfile_dm(&client, filePath);
+   rc = initialize_configfile_dm(filePath);
    ....
 ```
 
@@ -549,17 +560,16 @@ Platform by calling the *connectiotf_dm* function
 #include "devicemanagementclient.h"
    ....
    ....
-   ManagedDevice client;
    char *configFilePath = "./device.cfg";
 
-   rc = initialize_configfile_dm(&client, configFilePath);
+   rc = initialize_configfile_dm(configFilePath);
 
    if(rc != SUCCESS){
        printf("initialize failed and returned rc = %d.\n Quitting..", rc);
        return 0;
    }
 
-   rc = connectiotf_dm(&client);
+   rc = connectiotf_dm();
 
    if(rc != SUCCESS){
        printf("Connection failed and returned rc = %d.\n Quitting..", rc);
@@ -594,7 +604,6 @@ The device model in the WIoTP client library is represented as DeviceData and to
 The following code snippet shows how to create the object ManagedDevice along with DeviceMetadata with sample data:
 
 ``` {.sourceCode .c}
-ManagedDevice client;
 strcpy(client.DeviceData.deviceInfo.serialNumber, "10087" );
 strcpy(client.DeviceData.deviceInfo.manufacturer , "IBM");
 strcpy(client.DeviceData.deviceInfo.model , "7865");
@@ -629,11 +638,10 @@ void managedCallBack (char* Status, char* requestId, void* payload)
 }
  ...
  ...
- ManagedDevice client;
  char *filePath = "./device.cfg";
  rc = connectiotfConfig_dm(filePath);
  setCommandHandler_dm(myCallback);
- setManagedHandler_dm(&client,managedCallBack );
+ setManagedHandler_dm(managedCallBack );
 
  ....
 ```
@@ -655,12 +663,11 @@ In order to get the response for the each manage device request we need to make 
 #include "devicemanagementclient.h"
  ...
  ...
- ManagedDevice client;
  char *filePath = "./device.cfg";
  rc = connectiotfConfig_dm(filePath);
  setCommandHandler_dm(myCallback);
- setManagedHandler_dm(&client,managedCallBack );
- subscribeCommands_dm(&client);
+ setManagedHandler_dm(managedCallBack );
+ subscribeCommands_dm();
  ....
 ```
 
@@ -671,10 +678,9 @@ Manage
 The device can invoke publishManageEvent() function to participate in device management activities of the IBM Watson Internet of Things Platform
 
 ``` {.sourceCode .c}
-	publishManageEvent(&client,4000,1,1, reqId);
+	publishManageEvent(4000,1,1, reqId);
 ```
-As shown, this function accepts following 5 parameters,
-* *ManagedDevice struct Instance* which has all the device info filled
+As shown, this function accepts following 4 parameters,
 * *lifetime* The length of time in seconds within which the device must send another **Manage device** request in order to avoid being reverted to an unmanaged device and marked as dormant. If set to 0, the managed device will not become dormant. When set, the minimum supported setting is 3600 (1 hour).
 * *supportFirmwareActions* Tells whether the device supports firmware actions or not. The device must add a firmware handler to handle the firmware requests.
 * *supportDeviceActions* Tells whether the device supports Device actions or not. The device must add a Device action handler to handle the reboot and factory reset
@@ -690,10 +696,9 @@ Unmanage
 A device can invoke sendUnmanageRequest() function when it no longer needs to be managed. The IBM Watson Internet of Things Platform will no longer send new device management requests to this device and all device management requests from this device will be rejected other than a **Manage device** request.
 
 ``` {.sourceCode .c}
-	publishUnManageEvent(&client, reqId);
+	publishUnManageEvent(reqId);
 ```
-As shown, this function accepts following 2 parameters,
-* *ManagedDevice struct Instance* which has all the device info filled
+As shown, this function accepts following 1 parameter,
 * *request ID* out value of Request Id for the current request.
 
 Refer to the  <a href="https://docs.internetofthings.ibmcloud.com/devices/device_mgmt/index.html#/unmanage-device#unmanage-device">documentation</a> for more information about the Unmanage operation.
@@ -704,11 +709,9 @@ Location Update
 Devices that can determine their location can choose to notify the IBM Watson Internet of Things Platform about location changes. The Device can invoke one of the overloaded updateLocation() function to update the location of the device.
 
 ``` {.sourceCode .c}
-  updateLocation(&client, 77.5667,12.9667, 0,updatedDateTime, 0, reqId) ;
+  updateLocation(77.5667,12.9667, 0,updatedDateTime, 0, reqId) ;
 ```
-As shown, this function accepts following 7 parameters,
-* *ManagedDevice struct Instance* which has all the device info filled
-* *client* reference to the ManagedDevice
+As shown, this function accepts following 6 parameters,
 * *Latitude* in decimal degrees using WGS84
 * *Longitude* in decimal degrees using WGS84
 * *elevation*	Elevation in meters using WGS84
@@ -724,19 +727,17 @@ Append/Clear Error Codes
 Devices can choose to notify the IBM Watson Internet of Things Platform about changes in their error status. The Device can invoke  addErrorCode() function to add the current error code to Watson IoT Platform.
 
 ``` {.sourceCode .c}
-	addErrorCode(&client, 121 , reqId);
+	addErrorCode(121 , reqId);
 ```
 As shown, this function accepts following 3 parameters,
-* *ManagedDevice struct Instance* which has all the device info filled.
 * *ErrorCode* error code to be added as integer.
 * *request ID* out value of Request Id for the current request.
 Also, the ErrorCodes can be cleared from IBM Watson Internet of Things Platform by calling the clearErrorCodes() function as follows:
 
 ``` {.sourceCode .c}
-	clearErrorCodes(&client,  reqId);
+	clearErrorCodes(reqId);
 ```
 As shown, this function accepts following 2 parameters,
-* *ManagedDevice struct Instance* which has all the device info filled
 * *request ID* out value of Request Id for the current request.
 
 Append/Clear Log messages
@@ -744,10 +745,9 @@ Append/Clear Log messages
 Devices can choose to notify the IBM Watson Internet of Things Platform about changes by adding a new log entry. Log entry includes a log messages, its time stamp and severity, as well as an optional base64-encoded binary diagnostic data. The Devices can invoke addLog() function to send log messages,
 
 ``` {.sourceCode .c}
-addLog(&client, "test","",1, reqId);
+addLog("test","",1, reqId);
 ```
 As shown, this function accepts following 2 parameters,
-* *ManagedDevice struct Instance* which has all the device info filled.
 * *message* log information.
 * *data* optional base64-encoded binary diagnostic data as string.
 * *request ID* out value of Request Id for the current request.
@@ -756,15 +756,110 @@ As shown, this function accepts following 2 parameters,
 Also, the log messages can be cleared from IBM Watson Internet of Things Platform by calling the clearLogs() function as follows:
 
 ``` {.sourceCode .c}
-clearLogs(&client,reqId);
+clearLogs(reqId);
 ```
 As shown, this function accepts following 2 parameters,
-* *ManagedDevice struct Instance* which has all the device info filled
 * *request ID* out value of Request Id for the current request.
 
 The device diagnostics operations are intended to provide information on device errors, and does not provide diagnostic information relating to the devices connection to the IBM Watson Internet of Things Platform.
 
 Refer to the documentation <a href="https://docs.internetofthings.ibmcloud.com/devices/device_mgmt/index.html#/update-location#update-location">documentation</a> for more information about the Diagnostics operation.
+
+
+Firmware Actions
+--------------------
+
+The firmware update process is separated into two distinct actions:
+
+    Downloading Firmware
+    Updating Firmware.
+
+The device needs to do the following activities to support Firmware Actions:
+
+1. Construct DeviceFirmware details (Optional)
+
+In order to perform Firmware actions the device can optionally populate the DeviceFirmware details in the DeviceData as follows:
+
+
+strcpy(dmClient.DeviceData.mgmt.firmware.version,"FirmwareVersion");
+strcpy(dmClient.DeviceData.mgmt.firmware.name,"FirmwareName");
+strcpy( dmClient.DeviceData.mgmt.firmware.url,"FirmwareUrl");
+strcpy(dmClient.DeviceData.mgmt.firmware.verifier,"FirmwareVerifier");
+dmClient.DeviceData.mgmt.firmware.state=FIRMWARESTATE_IDLE;
+
+rc = initialize_configfile_dm(configFilePath);
+rc = connectiotf_dm();
+
+The DeviceFirmware details represents the current firmware of the device and will be used to report the status of the Firmware Download and Firmware Update actions to IBM Watson Internet of Things Platform. In case this DeviceFirmware details is not constructed by the device, then the library creates an empty object and reports the status to Watson IoT Platform.
+
+2. Inform the server about the Firmware action support
+
+The device needs to set the firmware action flag to true in order for the server to initiate the firmware request. This can be achieved by invoking the publishManageEvent() method with a true value for supportFirmwareActions parameter,
+
+publishManageEvent(3600, true, false,reqId);
+
+Once the support is informed to the DM server, the server then forwards the firmware actions to the device.
+
+3. Create the Firmware Action Handler
+
+In order to support the Firmware action, the device needs to create a handler and set the callback to the Client library by using the following methods:
+
+void setFirmwareDownloadHandler(actionCallback downloadHandler);
+void setFirmwareUpdateHandler(actionCallback updateHandler);
+
+3.1 Sample implementation of downloadFirmware
+
+The implementation must add a logic to download the firmware and report the status of the download via changeFirmwareState(state) method. If the Firmware Download operation is successful, then the state of the firmware to be set to DOWNLOADED and UpdateStatus should be set to SUCCESS.
+
+If an error occurs during Firmware Download the state should be set to IDLE and updateStatus should be set to one of the error status values:
+
+    OUT_OF_MEMORY
+    CONNECTION_LOST
+    INVALID_URI
+
+Device can check the integrity of the downloaded firmware image using the verifier and report the status back to IBM Watson Internet of Things Platform. The verifier can be set by the device during the startup or as part of the Download Firmware request by the application. 
+
+3.2 Sample implementation of updateFirmware
+
+The implementation must add a logic to install the downloaded firmware and report the status of the update. If the Firmware Update operation is successful, then the state of the firmware should to be set to IDLE and UpdateStatus should be set to SUCCESS.
+
+If an error occurs during Firmware Update, updateStatus should be set to one of the error status values:
+
+    OUT_OF_MEMORY
+    UNSUPPORTED_IMAGE
+
+Refer to this page for more information about the Firmware action.
+Device Actions
+
+The IBM Watson Internet of Things Platform supports the following device actions:
+
+    Reboot
+    Factory Reset
+
+The device needs to do the following activities to support Device Actions:
+
+1. Inform server about the Device Actions support
+
+In order to perform Reboot and Factory Reset, the device needs to inform the IBM Watson Internet of Things Platform about its support first. This can be achieved by invoking the publishManageEvent() method with a true value for supportDeviceActions parameter,
+
+Once the support is informed to the DM server, the server then forwards the device action requests to the device.
+
+2. Create the Device Action Handler
+
+In order to support the device action, the device needs to create a handler and set the callback to the Client library by using the following methods:
+
+void setRebootHandler(commandCallback rebootHandler);
+void setFactoryResetHandler(commandCallback resetHandler);
+
+2.1 Sample implementation of handleReboot
+
+The implementation must add a logic to reboot the device and report the status of the reboot. Upon receiving the request, the device first needs to inform the server about the support(or failure) before proceeding with the actual reboot. And if the device can not reboot the device or any other error during the reboot, the device can update the status along with an optional message. 
+
+2.2 Sample implementation of handleFactoryReset
+
+The implementation must add a logic to reset the device to factory settings and report the status of the factory reset. Upon receiving the request, the device first needs to inform the server about the support(or failure) before proceeding with the actual reset. And if the sample can not reset the device or any other error during the reset, the device can update the status along with an optional message. 
+
+Refer to <a href="https://docs.internetofthings.ibmcloud.com/devices/device_mgmt/requests.html#/firmware-actions#firmware-actions" >this page</a> for more information about the Device Action.
 
 Handling commands
 -----------------
@@ -807,7 +902,8 @@ Disconnect Client
 Disconnects the client and releases the connections
 
 ``` {.sourceCode .c}
-  disconnect_dm(&client);
+  disconnect_dm();
 ```
 As shown, this function accepts following parameter,
 * *ManagedDevice struct Instance* which has all the device info filled
+
