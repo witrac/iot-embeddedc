@@ -82,23 +82,21 @@ void factoryResetCallBack (char* reqID, char* action, void* payload)
 	printf("------------------------------------\n" );
 }
 //All the device data string variables are allocated with enough memory
-void populateMgmtConfig(ManagedDevice* client){
-	strcpy(client->DeviceData.deviceInfo.serialNumber, "10087" );
-	strcpy(client->DeviceData.deviceInfo.manufacturer , "IBM");
-	strcpy(client->DeviceData.deviceInfo.model , "7865");
-	strcpy(client->DeviceData.deviceInfo.deviceClass , "A");
-	strcpy(client->DeviceData.deviceInfo.description , "My Ras");
-	strcpy(client->DeviceData.deviceInfo.fwVersion , "1.0.0");
-	strcpy(client->DeviceData.deviceInfo.hwVersion , "1.0");
-	strcpy(client->DeviceData.deviceInfo.descriptiveLocation , "EGL C");
-	strcpy(client->DeviceData.metadata.metadata ,"{}");
+void populateMgmtConfig(){
+	strcpy(dmClient.DeviceData.deviceInfo.serialNumber, "10087" );
+	strcpy(dmClient.DeviceData.deviceInfo.manufacturer , "IBM");
+	strcpy(dmClient.DeviceData.deviceInfo.model , "7865");
+	strcpy(dmClient.DeviceData.deviceInfo.deviceClass , "A");
+	strcpy(dmClient.DeviceData.deviceInfo.description , "My Ras");
+	strcpy(dmClient.DeviceData.deviceInfo.fwVersion , "1.0.0");
+	strcpy(dmClient.DeviceData.deviceInfo.hwVersion , "1.0");
+	strcpy(dmClient.DeviceData.deviceInfo.descriptiveLocation , "EGL C");
+	strcpy(dmClient.DeviceData.metadata.metadata ,"{}");
 }
 
 int main(int argc, char const *argv[])
 {
 	int rc = -1;
-
-	ManagedDevice client;
 
 	//catch interrupt signal
 	signal(SIGINT, signalHandler);
@@ -106,7 +104,7 @@ int main(int argc, char const *argv[])
 
 	char *configFilePath = "./device.cfg";
 
-	rc = initialize_configfile_dm(&client, configFilePath);
+	rc = initialize_configfile_dm(configFilePath);
 
 	if(rc != SUCCESS){
 		printf("initialize failed and returned rc = %d.\n Quitting..", rc);
@@ -129,7 +127,7 @@ int main(int argc, char const *argv[])
 
 	char reqId[40];
 	printf("\n publish manage ..\n");
-	populateMgmtConfig(&client);
+	populateMgmtConfig();
 	publishManageEvent(4000,1,1, reqId);
 	printf("\n Manage Event Exited: %s",reqId);
 
@@ -143,7 +141,6 @@ int main(int argc, char const *argv[])
 		rc= publishEvent_dm("status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
 		printf(" %d\n", rc);
 		rc = yield_dm(100);
-		printf(" %d\n", rc);
 		sleep(2);
 	}
 

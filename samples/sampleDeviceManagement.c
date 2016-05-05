@@ -55,16 +55,16 @@ void printOptions(){
 
 }
 
-void populateMgmtConfig(ManagedDevice* client){
-	strcpy(client->DeviceData.deviceInfo.serialNumber, "10087" );
-	strcpy(client->DeviceData.deviceInfo.manufacturer , "IBM");
-	strcpy(client->DeviceData.deviceInfo.model , "7865");
-	strcpy(client->DeviceData.deviceInfo.deviceClass , "A");
-	strcpy(client->DeviceData.deviceInfo.description , "My Ras");
-	strcpy(client->DeviceData.deviceInfo.fwVersion , "1.0.0");
-	strcpy(client->DeviceData.deviceInfo.hwVersion , "1.0");
-	strcpy(client->DeviceData.deviceInfo.descriptiveLocation , "EGL C");
-	strcpy(client->DeviceData.metadata.metadata ,"{}");
+void populateMgmtConfig(){
+	strcpy(dmClient.DeviceData.deviceInfo.serialNumber, "10087" );
+	strcpy(dmClient.DeviceData.deviceInfo.manufacturer , "IBM");
+	strcpy(dmClient.DeviceData.deviceInfo.model , "7865");
+	strcpy(dmClient.DeviceData.deviceInfo.deviceClass , "A");
+	strcpy(dmClient.DeviceData.deviceInfo.description , "My Ras");
+	strcpy(dmClient.DeviceData.deviceInfo.fwVersion , "1.0.0");
+	strcpy(dmClient.DeviceData.deviceInfo.hwVersion , "1.0");
+	strcpy(dmClient.DeviceData.deviceInfo.descriptiveLocation , "EGL C");
+	strcpy(dmClient.DeviceData.metadata.metadata ,"{}");
 }
 void publishEventToIot (){
 	int rc =-1;
@@ -80,12 +80,10 @@ int main(int argc, char const *argv[])
 {
 	int rc = -1;
 	int x=0;
-	ManagedDevice client;
-
 
 	char *configFilePath = "./device.cfg";
 
-	rc = initialize_configfile(&deviceClient, configFilePath);
+	rc = initialize_configfile_dm(configFilePath);
 	if(rc != SUCCESS){
 		printf("initialize failed and returned rc = %d.\n Quitting..", rc);
 		scanf("%d",&x);
@@ -102,7 +100,7 @@ int main(int argc, char const *argv[])
 	setCommandHandler_dm(myCallback);
 	setManagedHandler_dm(managedCallBack );
 	subscribeCommands_dm();
-	populateMgmtConfig(&client);
+	populateMgmtConfig();
 	int exit = 0;
 	char reqId[40];
 	while (!exit){

@@ -132,16 +132,15 @@ struct managedDevice{
 		bool bObserve;
 		char responseSubscription[50];
 		struct deviceData DeviceData;
+		struct iotfclient deviceClient;
 };
 typedef struct managedDevice ManagedDevice;
+ManagedDevice dmClient;
 
-struct iotfclient deviceClient;
 //Callback used to process actions
 typedef void (*actionCallback)();
 /**
 * Function used to initialize the IBM Watson IoT client using the config file which is generated when you register your device
-*
-* @param client - Reference to the ManagedDevice
 *
 * @param configFilePath - File path to the configuration file
 *
@@ -149,12 +148,10 @@ typedef void (*actionCallback)();
 * error codes
 * CONFIG_FILE_ERROR -3 - Config file not present or not in right format
 */
-int initialize_configfile_dm(ManagedDevice *client, char *configFilePath);
+int initialize_configfile_dm(char *configFilePath);
 
 /**
 * Function used to initialize the IBM Watson IoT client
-*
-* @param client - Reference to the ManagedDevice
 *
 * @param org - Your organization ID
 *
@@ -168,7 +165,7 @@ int initialize_configfile_dm(ManagedDevice *client, char *configFilePath);
 *
 * @return int return code
 */
-int initialize_dm(ManagedDevice *client, char *orgId, char *deviceType, char *deviceId, char *authmethod, char *authToken);
+int initialize_dm(char *orgId, char *deviceType, char *deviceId, char *authmethod, char *authToken);
 
 /**
 * Function used to connect the device to IBM Watson IoT client
