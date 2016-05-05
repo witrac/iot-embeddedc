@@ -34,9 +34,37 @@
 #define ADD_DIAG_LOG "iotdevice-1/add/diag/log"
 #define CLEAR_DIAG_LOG "iotdevice-1/clear/diag/log"
 #define NOTIFY "iotdevice-1/notify"
+#define DMRESPONSE "iotdm-1/response"
 #define RESPONSE "iotdevice-1/response"
 
+//Macros for Device actions
+#define REBOOT_INITIATED 		  202
+#define REBOOT_FAILED	 		  500
+#define REBOOT_NOTSUPPORTED 	  501
+
+#define FACTORYRESET_INITIATED 	  202
+#define FACTORYRESET_FAILED	 	  500
+#define FACTORYRESET_NOTSUPPORTED 501
+
+#define UPDATE_SUCCESS			  204
+#define RESPONSE_SUCCESS		  200
+#define FIRMWARESTATE_IDLE		  0
+#define FIRMWARESTATE_DOWNLOADING 1
+#define FIRMWARE_DOWNLOADED		  2
+
+#define FIRMWAREUPDATE_SUCCESS	  	  	  0
+#define FIRMWAREUPDATE_INPROGRESS 	  	  1
+#define FIRMWAREUPDATE_OUTOFMEMORY 	  	  2
+#define FIRMWAREUPDATE_CONNECTIONLOST 	  3
+#define FIRMWAREUPDATE_VERIFICATIONFAILED 4
+#define FIRMWAREUPDATE_UNSUPPORTEDIMAGE   5
+#define FIRMWAREUPDATE_INVALIDURL		  6
+
+#define RESPONSE_ACCEPTED				  202
+#define BAD_REQUEST						  400
+
 //structure for device information
+//string variables needs to be allocated with enough memory based on the requirement
 struct DeviceInfo{
 	char serialNumber[20];
 	char manufacturer[20];
@@ -68,13 +96,14 @@ struct DeviceAction{
 //structure for device firmware attributes
 struct DeviceFirmware{
 	char version[10];
-	char name[10];
-	char url[10];
-	char verifier[10];
+	char name[20];
+	char url[100];
+	char verifier[20];
 	int state;
 	int updateStatus;
-	char deviceId[10];
-	char typeId[10];
+	char deviceId[40];
+	char typeId[20];
+	char updatedDateTime[20];
 };
 
 //structure for metadata of device
@@ -100,12 +129,15 @@ struct managedDevice{
 		bool supportDeviceActions ;
 		bool supportFirmwareActions ;
 		bool bManaged ;
+		bool bObserve;
 		char responseSubscription[50];
 		struct deviceData DeviceData;
 };
 typedef struct managedDevice ManagedDevice;
 
 struct iotfclient deviceClient;
+//Callback used to process actions
+typedef void (*actionCallback)();
 /**
 * Function used to initialize the IBM Watson IoT client using the config file which is generated when you register your device
 *
@@ -141,16 +173,12 @@ int initialize_dm(ManagedDevice *client, char *orgId, char *deviceType, char *de
 /**
 * Function used to connect the device to IBM Watson IoT client
 *
-* @param client - Reference to the ManagedDevice
-*
 * @return int return code
 */
 
-int connectiotf_dm(ManagedDevice* client);
+int connectiotf_dm();
 /**
 * Function used to Publish events from the device to the IBM Watson IoT service
-*
-* @param client - Reference to the ManagedDevice
 *
 * @param eventType - Type of event to be published e.g status, gps
 *
@@ -162,7 +190,7 @@ int connectiotf_dm(ManagedDevice* client);
 *
 * @return int return code from the publish
 */
-int publishEvent_dm(ManagedDevice *client, char *eventType, char *eventFormat, unsigned char* data, enum QoS qos);
+int publishEvent_dm(char *eventType, char *eventFormat, unsigned char* data, enum QoS qos);
 
 /**
 * Function used to set the Command Callback function. This must be set if you want to receive commands.
@@ -172,45 +200,37 @@ int publishEvent_dm(ManagedDevice *client, char *eventType, char *eventFormat, u
 * @param cb - A Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* commandName, char* format, void*     payload)
 *
 */
-void setCommandHandler_dm(ManagedDevice *client, commandCallback cb);
+void setCommandHandler_dm(commandCallback cb);
 
 /**
 * Function used to subscribe to all commands. This function is by default called when in registered mode.
 *
-* @param client - Reference to the ManagedDevice
-*
 * @return int return code
 */
-int subscribeCommands_dm(ManagedDevice *client);
+int subscribeCommands_dm();
 
 /**
 * Function used to check if the client is connected
 *
-* @param client - Reference to the ManagedDevice
-*
 * @return int return code
 */
-int isConnected_dm(ManagedDevice *client);
+int isConnected_dm();
 
 /**
 * Function used to Yield for commands.
-*
-* @param client - Reference to the ManagedDevice
 *
 * @param time_ms - Time in milliseconds
 *
 * @return int return code
 */
-int yield_dm(ManagedDevice *client, int time_ms);
+int yield_dm(int time_ms);
 
 /**
 * Function used to disconnect from the IBM Watson IoT service
 *
-* @param client - Reference to the ManagedDevice
-*
 * @return int return code
 */
-int disconnect_dm(ManagedDevice *client);
+int disconnect_dm();
 
 /**
 * <p>Send a device manage request to Watson IoT Platform</p>
@@ -240,7 +260,7 @@ int disconnect_dm(ManagedDevice *client);
 * 
 * @return
 */
-void publishManageEvent(ManagedDevice *client, long lifetime, int supportFirmwareActions,
+void publishManageEvent(long lifetime, int supportFirmwareActions,
 	int supportDeviceActions, char* reqId);
 /**
  * Moves the device from managed state to unmanaged state
@@ -249,18 +269,14 @@ void publishManageEvent(ManagedDevice *client, long lifetime, int supportFirmwar
  * This means Watson IoT Platform will no longer send new device management requests
  * to this device and device management requests from this device will
  * be rejected apart from a Manage device request
- * 
- * @param client reference to the ManagedDevice
  *
  * @param reqId Function returns the reqId if the Unmanage request is successful.
  *
  */
-void publishUnManageEvent(ManagedDevice* client, char* reqId);
+void publishUnManageEvent(char* reqId);
 
 /**
  * Update the location.
- *
- * @param client reference to the ManagedDevice
  * 
  * @param latitude	Latitude in decimal degrees using WGS84
  *
@@ -277,12 +293,10 @@ void publishUnManageEvent(ManagedDevice* client, char* reqId);
  * @return code indicating whether the update is successful or not
  *        (200 means success, otherwise unsuccessful)
  */
-void updateLocation(ManagedDevice* client, double latitude, double longitude, double elevation, char* measuredDateTime, double accuracy, char* reqId) ;
+void updateLocation(double latitude, double longitude, double elevation, char* measuredDateTime, double accuracy, char* reqId) ;
 
 /**
  * Update the location.
- * 
- * @param client reference to the ManagedDevice 
  *
  * @param latitude	Latitude in decimal degrees using WGS84
  *
@@ -301,11 +315,9 @@ void updateLocation(ManagedDevice* client, double latitude, double longitude, do
  * @return code indicating whether the update is successful or not
  *        (200 means success, otherwise unsuccessful)
  */
-void updateLocationEx(ManagedDevice* client, double latitude, double longitude, double elevation, char* measuredDateTime,char* updatedDateTime, double accuracy, char* reqId);
+void updateLocationEx(double latitude, double longitude, double elevation, char* measuredDateTime,char* updatedDateTime, double accuracy, char* reqId);
 /**
  * Adds the current errorcode to IBM Watson IoT Platform.
- * 
- * @param client reference to the ManagedDevice 
  *
  * @param errorCode The "errorCode" is a current device error code that
  * needs to be added to the Watson IoT Platform.
@@ -315,22 +327,18 @@ void updateLocationEx(ManagedDevice* client, double latitude, double longitude, 
  * @return code indicating whether the update is successful or not
  *        (200 means success, otherwise unsuccessful)
  */
-void addErrorCode(ManagedDevice* client, int errNum, char* reqId);
+void addErrorCode(int errNum, char* reqId);
 /**
  * Clear the Error Codes from IBM Watson IoT Platform for this device
- * 
- * @param client reference to the ManagedDevice 
  *
  * @param reqId Function returns the reqId if the clearErrorCodes request is successful.
  *
  * @return code indicating whether the clear operation is successful or not
  *        (200 means success, otherwise unsuccessful)
  */
-void clearErrorCodes(ManagedDevice* client, char* reqId);
+void clearErrorCodes(char* reqId);
 /**
  * The Log message that needs to be added to the Watson IoT Platform.
- * 
- * @param client reference to the ManagedDevice 
  *
  * @param message The Log message that needs to be added to the Watson IoT Platform.
  *
@@ -345,27 +353,75 @@ void clearErrorCodes(ManagedDevice* client, char* reqId);
  * @return code indicating whether the update is successful or not
  *        (200 means success, otherwise unsuccessful)
  */
-void addLog(ManagedDevice* client,char* message, char* data ,int severity, char* reqId);
+void addLog(char* message, char* data ,int severity, char* reqId);
 /**
  * Clear the Logs from IBM Watson IoT Platform for this device
- * 
- * @param client reference to the ManagedDevice 
  *
  * @param reqId Function returns the reqId if the clearLogs request is successful.
  *
  * @return code indicating whether the clear operation is successful or not
  *        (200 means success, otherwise unsuccessful)
  */
-void clearLogs(ManagedDevice* client, char* reqId);
+void clearLogs(char* reqId);
 
 /**
  * Register Callback function to managed request response
- * 
- * @param client reference to the ManagedDevice 
  *
  * @param cb - A Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* Status, char* requestId,            void*       payload)
  *
 */
-void setManagedHandler_dm(ManagedDevice *client, commandCallback handler);
+void setManagedHandler_dm(commandCallback cb);
+
+/**
+ * Register Callback function to Factory reset request
+ *
+ * @param client reference to the ManagedDevice
+ *
+ * @param cb - A Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* Status, char* requestId,            void*       payload)
+ *
+*/
+void setFactoryResetHandler(commandCallback cb);
+
+/**
+ * Register Callback function to Reboot request
+ *
+ * @param cb - A Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* Status, char* requestId,            void*       payload)
+ *
+*/
+void setRebootHandler(commandCallback cb);
+/**
+ * Register Callback function to Firmware Download request
+ *
+ * @param cb - A Function pointer to the actionCallback. Its signature - void (*actionCallback)()
+ *
+*/
+void setFirmwareDownloadHandler(actionCallback cb);
+/**
+ * Register Callback function to Firmware Update request
+ *
+ * @param cb - A Function pointer to the actionCallback. Its signature - void (*actionCallback)()
+ *
+*/
+void setFirmwareUpdateHandler(actionCallback cb);
+/**
+ * Update the firmware state while downloading firmware and
+ * Notifies the IBM Watson IoT Platform with the updated state
+ *
+ * @param state Download state update received from the device
+ *
+ * @return int return code
+ *
+ */
+int changeFirmwareState(int state);
+/**
+ * Update the firmware state while updating firmware and
+ * Notifies the IBM Watson IoT Platform with the updated state
+ *
+ * @param state update state update received from the device
+ *
+ * @return int return code
+ *
+ */
+int changeFirmwareUpdateState(int state);
 
 #endif /* DEVICEMANAGEMENTCLIENT_H_ */

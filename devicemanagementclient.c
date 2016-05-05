@@ -13,7 +13,7 @@
  * Contributors:
  *    Hari hara prasad Viswanathan, - initial implementation and API implementation
  *    Hari prasada Reddy P
- *
+ *    Hari Prasada Reddy P          - Added implementation for Device actions support 
  *
  ****************************************/
 
@@ -23,22 +23,44 @@
 #include <memory.h>
 #include <time.h>
 #include "devicemanagementclient.h"
+#include "lib/cJSON.h"
 
 commandCallback cb;
+commandCallback cbReboot;
+commandCallback cbFactoryReset;
+actionCallback cbFirmwareDownload;
+actionCallback cbFirmwareUpdate;
+ManagedDevice* dmClient;
 
 //util functions
-void messageCame(MessageData* md);
+void onMessage(MessageData* md);
+void messageResponse(MessageData* md);
+void messageUpdate(MessageData* md);
+void messageObserve(MessageData* md);
+void messageCancel(MessageData* md);
+void messageForAction(MessageData* md, bool isReboot);
 void generateUUID(char* uuid_str);
-int publish(ManagedDevice* client, char* publishTopic, char* data);
+int publish(char* publishTopic, char* data);
+void getMessageFromReturnCode(int rc, char* msg);
+void messageFirmwareDownload(MessageData* md);
+void messageFirmwareUpdate(MessageData* md);
+
+const char* dmUpdate = "iotdm-1/device/update";
+const char* dmObserve = "iotdm-1/observe";
+const char* dmCancel = "iotdm-1/cancel";
+const char* dmReboot = "iotdm-1/mgmt/initiate/device/reboot";
+const char* dmFactoryReset = "iotdm-1/mgmt/initiate/device/factory_reset";
+const char* dmFirmwareDownload = "iotdm-1/mgmt/initiate/firmware/download";
+const char* dmFirmwareUpdate = "iotdm-1/mgmt/initiate/firmware/update";
 
 static char currentRequestID[40];
 volatile int interrupt = 0;
 
 // Handle signal interrupt
-void sigHandler(int signo) {
+/*void sigHandler(int signo) {
 	printf("SigINT received.\n");
 	interrupt = 1;
-}
+}*/
 
 /*
 * Function used to initialize the IBM Watson IoT client using the config file which is generated when you register your device
@@ -54,7 +76,7 @@ void sigHandler(int signo) {
 int initialize_configfile_dm(ManagedDevice *client, char *configFilePath)
 {
 	int rc = -1;
-
+	dmClient = client;
 	rc = initialize_configfile(&deviceClient, configFilePath);
 	
 	return rc;
@@ -80,6 +102,7 @@ int initialize_configfile_dm(ManagedDevice *client, char *configFilePath)
 int initialize_dm(ManagedDevice *client, char *orgId, char *deviceType, char *deviceId, char *authmethod, char *authToken)
 {
 	int rc = -1;
+	dmClient = client;
 	rc = initialize(&deviceClient, orgId, deviceType, deviceId, authmethod, authToken);
 	return rc;
 }
@@ -87,18 +110,13 @@ int initialize_dm(ManagedDevice *client, char *orgId, char *deviceType, char *de
 /*
 * Function used to initialize the IBM Watson IoT client
 *
-* @param client - Reference to the Iotfclient
-*
 * @return int return code
 */
-int connectiotf_dm(ManagedDevice *client)
+int connectiotf_dm()
 {
-
 	int rc = isConnected(&deviceClient);
 	if(rc){ 							//if connected return
 		printf("Client is connected\n");
-
-
 		return rc;
 	}
 
@@ -108,8 +126,6 @@ int connectiotf_dm(ManagedDevice *client)
 
 /*
 * Function used to Publish events from the device to the IBM Watson IoT service
-*
-* @param client - Reference to the ManagedDevice
 *
 * @param eventType - Type of event to be published e.g status, gps
 *
@@ -122,7 +138,7 @@ int connectiotf_dm(ManagedDevice *client)
 * @return int return code from the publish
 */
 
-int publishEvent_dm(ManagedDevice *client, char *eventType, char *eventFormat, unsigned char* data, enum QoS qos)
+int publishEvent_dm(char *eventType, char *eventFormat, unsigned char* data, enum QoS qos)
 {
 	int rc = -1;
 	rc = publishEvent(&deviceClient, eventType, eventFormat, data, qos);
@@ -131,13 +147,11 @@ int publishEvent_dm(ManagedDevice *client, char *eventType, char *eventFormat, u
 
 /*
 * Function used to set the Command Callback function. This must be set if you to recieve commands.
-* 
-* @param client reference to the ManagedDevice 
 *
 * @param handler Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* commandName, char* payload)
 * 
 */
-void setCommandHandler_dm(ManagedDevice *client, commandCallback handler)
+void setCommandHandler_dm(commandCallback handler)
 {
 	setCommandHandler(&deviceClient,handler );//handler
 	cb = handler;
@@ -145,26 +159,70 @@ void setCommandHandler_dm(ManagedDevice *client, commandCallback handler)
 
 /**
  * Register Callback function to managed request response
- * 
- * @param client reference to the ManagedDevice 
  *
  * @param handler Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* Status, char* requestId,            void*       payload)
  *
 */
 
-void setManagedHandler_dm(ManagedDevice *client, commandCallback handler)
+void setManagedHandler_dm(commandCallback handler)
 {
 	cb = handler;
 }
 
+/**
+ * Register Callback function to Reboot request
+ * 
+ * @param handler Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* Status, char* requestId,            void*       payload)
+ *
+*/
+
+void setRebootHandler(commandCallback handler)
+{
+	cbReboot = handler;
+}
+
+/**
+ * Register Callback function to Factory reset request
+ *
+ * @param handler Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* Status, char* requestId,            void*       payload)
+ *
+*/
+
+void setFactoryResetHandler(commandCallback handler)
+{
+	cbFactoryReset = handler;
+}
+
+/**
+ * Register Callback function to Download Firmware
+ *
+ * @param handler Function pointer to the actionCallback. Its signature - void (*actionCallback)()
+ *
+*/
+
+void setFirmwareDownloadHandler(actionCallback handler)
+{
+	cbFirmwareDownload = handler;
+}
+
+/**
+ * Register Callback function to update Firmware
+ *
+ * @param handler Function pointer to the actionCallback. Its signature - void (*actionCallback)()
+ *
+*/
+
+void setFirmwareUpdateHandler(actionCallback handler)
+{
+	cbFirmwareUpdate = handler;
+}
+
 /*
 * Function used to subscribe to all commands. This function is by default called when in registered mode.
-* 
-* @param client reference to the ManagedDevice 
 *
 * @return int return code
 */
-int subscribeCommands_dm(ManagedDevice *client)
+int subscribeCommands_dm()
 {
 	int rc = -1;
 
@@ -172,30 +230,23 @@ int subscribeCommands_dm(ManagedDevice *client)
 	if(rc >=0){
 		Client *c;
 		c= &(deviceClient.c);
-		rc = MQTTSubscribe(c, "iotdm-1/response", QOS0, messageCame);
-		rc = MQTTSubscribe(c, "iotdm-1/observe", QOS0, messageCame);
-		rc = MQTTSubscribe(c, "iotdm-1/cancel", QOS0, messageCame);
-		rc = MQTTSubscribe(c, "iotdm-1/mgmt/initiate/device/reboot", QOS0, messageCame);
-		rc = MQTTSubscribe(c, "iotdm-1/mgmt/initiate/device/factory_reset", QOS0, messageCame);
-		rc = MQTTSubscribe(c, "iotdm-1/mgmt/initiate/firmware/download", QOS0, messageCame);
-		rc = MQTTSubscribe(c, "iotdm-1/mgmt/initiate/firmware/update", QOS0, messageCame);
-		rc = MQTTSubscribe(c, "iotdm-1/device/update", QOS0, messageCame);
+		// Call back handles all the requests and responses received from the Watson IoT platform
+		rc = MQTTSubscribe(c, "iotdm-1/#", QOS0, onMessage);
+		printf("Actions subscription :%d\n",rc);
 	}else{
-		printf("iotf subscribe faild ");
+		printf("iotf subscribe failed ");
 	}
 	return rc;
 }
 
 /*
 * Function used to Yield for commands.
-* 
-* @param client reference to the ManagedDevice 
 *
 * @param time_ms - Time in milliseconds
 *
 * @return int return code
 */
-int yield_dm(ManagedDevice *client, int time_ms)
+int yield_dm(int time_ms)
 {
 	int rc = 0;
 	rc = yield(&deviceClient, time_ms);
@@ -204,25 +255,21 @@ int yield_dm(ManagedDevice *client, int time_ms)
 
 /*
 * Function used to check if the client is connected
-* 
-* @param client reference to the ManagedDevice 
 *
 * @return int return code
 */
-int isConnected_dm(ManagedDevice *client)
+int isConnected_dm()
 {
 	return isConnected(&deviceClient);
 }
 
 /*
 * Function used to disconnect from the IBM Watson IoT service
-* 
-* @param client reference to the ManagedDevice 
 *
 * @return int return code
 */
 
-int disconnect_dm(ManagedDevice *client)
+int disconnect_dm()
 {
 	int rc = 0;
 	rc = disconnect(&deviceClient);
@@ -240,8 +287,6 @@ int disconnect_dm(ManagedDevice *client)
 * 
 * <p>This method connects the device to Watson IoT Platform connect if its not connected already</p>
 * 
-* @param client reference to the ManagedDevice
-* 
 * @param lifetime The length of time in seconds within 
 *        which the device must send another Manage device request.
 *        if set to 0, the managed device will not become dormant. 
@@ -257,19 +302,21 @@ int disconnect_dm(ManagedDevice *client)
 * 
 * @return
 */
-void publishManageEvent(ManagedDevice *client, long lifetime, int supportFirmwareActions,
+void publishManageEvent(long lifetime, int supportFirmwareActions,
 	int supportDeviceActions, char* reqId)
 {
 		char uuid_str[40];
 		generateUUID(uuid_str);
 		strcpy(currentRequestID,uuid_str);
-		char* strPayload = "{\"d\": {\"metadata\": %s },\"lifetime\": %ld ,\"supports\": {\"deviceActions\": %s,\"firmwareActions\": %s},\"deviceInfo\": {\"serialNumber\":\"%s\",\"manufacturer\":\"%s\",\"model\":\"%s\",\"deviceClass\":\"%s\",\"description\":\"%s\",\"fwVersion\":\"%s\",\"hwVersion\":\"%s\",\"descriptiveLocation\":\"%s\"},\"reqId\": \"%s\"}" ;//cJSON_Print(jsonPayload);
+		char* strPayload = "{\"d\": {\"metadata\":%s ,\"lifetime\":%ld ,\"supports\": {\"deviceActions\":%d,\"firmwareActions\":%d},\"deviceInfo\": {\"serialNumber\":\"%s\",\"manufacturer\":\"%s\",\"model\":\"%s\",\"deviceClass\":\"%s\",\"description\":\"%s\",\"fwVersion\":\"%s\",\"hwVersion\":\"%s\",\"descriptiveLocation\":\"%s\"}},\"reqId\": \"%s\"}" ;//cJSON_Print(jsonPayload);
 		char payload[1500];
-		sprintf(payload,strPayload,client->DeviceData.metadata.metadata,lifetime,"true","true",client->DeviceData.deviceInfo.serialNumber,client->DeviceData.deviceInfo.manufacturer, client->DeviceData.deviceInfo.model,client->DeviceData.deviceInfo.deviceClass,client->DeviceData.deviceInfo.description,client->DeviceData.deviceInfo.fwVersion,client->DeviceData.deviceInfo.hwVersion,client->DeviceData.deviceInfo.descriptiveLocation,uuid_str);
+		sprintf(payload,strPayload,dmClient->DeviceData.metadata.metadata,lifetime, supportDeviceActions, supportFirmwareActions, dmClient->DeviceData.deviceInfo.serialNumber,dmClient->DeviceData.deviceInfo.manufacturer, dmClient->DeviceData.deviceInfo.model,dmClient->DeviceData.deviceInfo.deviceClass,dmClient->DeviceData.deviceInfo.description,dmClient->DeviceData.deviceInfo.fwVersion,dmClient->DeviceData.deviceInfo.hwVersion,dmClient->DeviceData.deviceInfo.descriptiveLocation,uuid_str);
 		int rc = -1;
-		rc = publish(client, MANAGE, payload);
-		if(rc == SUCCESS)
+		rc = publish(MANAGE, payload);
+		if(rc == SUCCESS){
 			strcpy(reqId, uuid_str);
+			printf("publish success\n");
+		}
 }
 
 /**
@@ -279,12 +326,10 @@ void publishManageEvent(ManagedDevice *client, long lifetime, int supportFirmwar
  * This means Watson IoT Platform will no longer send new device management requests
  * to this device and device management requests from this device will
  * be rejected apart from a Manage device request
- * 
- * @param client reference to the ManagedDevice
  *
  * @param reqId Function returns the reqId if the Unmanage request is successful.
  */
-void publishUnManageEvent(ManagedDevice* client, char* reqId)
+void publishUnManageEvent(char* reqId)
 {
 	char uuid_str[40];
 	int rc = -1;
@@ -292,7 +337,7 @@ void publishUnManageEvent(ManagedDevice* client, char* reqId)
 	strcpy(currentRequestID,uuid_str);
 	char data[70];
 	sprintf(data,"{\"reqId\":\"%s\"}",uuid_str);
-	rc = publish(client, UNMANAGE, data);
+	rc = publish(UNMANAGE, data);
 	if(rc == SUCCESS)
 		strcpy(reqId, uuid_str);
 }
@@ -300,8 +345,6 @@ void publishUnManageEvent(ManagedDevice* client, char* reqId)
 /*
  * Update the location of the device. This method converts the
  * date in the required format. The caller needs to pass the date in string in ISO8601 format.
- * 
- * @param client reference to the ManagedDevice
  *
  * @param latitude	Latitude in decimal degrees using WGS84
  *
@@ -319,7 +362,7 @@ void publishUnManageEvent(ManagedDevice* client, char* reqId)
  *        (200 means success, otherwise unsuccessful)
 
  */
-void updateLocation(ManagedDevice* client, double latitude, double longitude, double elevation, char* measuredDateTime, double accuracy, char* reqId)
+void updateLocation(double latitude, double longitude, double elevation, char* measuredDateTime, double accuracy, char* reqId)
 {
 	int rc = -1;
 
@@ -330,7 +373,7 @@ void updateLocation(ManagedDevice* client, double latitude, double longitude, do
 	char data[500];
 	sprintf(data,"{\"d\":{\"longitude\":%f,\"latitude\":%f,\"elevation\":%f,\"measuredDateTime\":\"%s\",\"accuracy\":%f},\"reqId\":\"%s\"}", latitude, longitude, elevation, measuredDateTime, accuracy, uuid_str);
 
-	rc = publish(client, UPDATE_LOCATION, data);
+	rc = publish(UPDATE_LOCATION, data);
 	if(rc == SUCCESS)
 		strcpy(reqId, uuid_str);
 }
@@ -338,8 +381,6 @@ void updateLocation(ManagedDevice* client, double latitude, double longitude, do
 /*
  * Update the location of the device. This method converts the
  * date in the required format. The caller needs to pass the date in string in ISO8601 format.
- * 
- * @param client reference to the ManagedDevice
  *
  * @param latitude	Latitude in decimal degrees using WGS84
  *
@@ -348,6 +389,8 @@ void updateLocation(ManagedDevice* client, double latitude, double longitude, do
  * @param elevation	Elevation in meters using WGS84
  *
  * @param measuredDateTime When the location information is retrieved
+ * *
+ * @param updatedDateTime When the location information is updated
  *
  * @param accuracy	Accuracy of the position in meters
  *
@@ -357,7 +400,7 @@ void updateLocation(ManagedDevice* client, double latitude, double longitude, do
  *        (200 means success, otherwise unsuccessful)
 
  */
-void updateLocationEx(ManagedDevice* client, double latitude, double longitude, double elevation, char* measuredDateTime,char* updatedDateTime, double accuracy, char* reqId)
+void updateLocationEx(double latitude, double longitude, double elevation, char* measuredDateTime,char* updatedDateTime, double accuracy, char* reqId)
 {
 	int rc = -1;
 	char uuid_str[40];
@@ -367,7 +410,7 @@ void updateLocationEx(ManagedDevice* client, double latitude, double longitude, 
 	char data[500];
 	sprintf(data,"{\"d\":{\"longitude\":%f,\"latitude\":%f,\"elevation\":%f,\"measuredDateTime\":\"%s\",\"updatedDateTime\":\"%s\",\"accuracy\":%f},\"reqId\":\"%s\"}", latitude, longitude, elevation, updatedDateTime, updatedDateTime, accuracy, uuid_str);
 
-	rc = publish(client, UPDATE_LOCATION, data);
+	rc = publish(UPDATE_LOCATION, data);
 		
 	if(rc == SUCCESS)
 		strcpy(reqId, uuid_str);
@@ -375,8 +418,6 @@ void updateLocationEx(ManagedDevice* client, double latitude, double longitude, 
 
 /**
  * Adds the current errorcode to IBM Watson IoT Platform.
- * 
- * @param client reference to the ManagedDevice 
  *
  * @param errorCode The "errorCode" is a current device error code that
  * needs to be added to the Watson IoT Platform.
@@ -386,7 +427,7 @@ void updateLocationEx(ManagedDevice* client, double latitude, double longitude, 
  * @return code indicating whether the update is successful or not
  *        (200 means success, otherwise unsuccessful)
  */
-void addErrorCode(ManagedDevice* client, int errNum, char* reqId)
+void addErrorCode(int errNum, char* reqId)
 {
 	char uuid_str[40];
 	generateUUID(uuid_str);
@@ -395,22 +436,20 @@ void addErrorCode(ManagedDevice* client, int errNum, char* reqId)
 	char data[125];
 	sprintf(data,"{\"d\":{\"errorCode\":%d},\"reqId\":\"%s\"}", errNum, uuid_str);
 
-	rc = publish(client, CREATE_DIAG_ERRCODES, data);
+	rc = publish(CREATE_DIAG_ERRCODES, data);
 	if(rc == SUCCESS)
 		strcpy(reqId, uuid_str);
 }
 
 /**
  * Clear the Error Codes from IBM Watson IoT Platform for this device
- * 
- * @param client reference to the ManagedDevice 
  *
  * @param reqId Function returns the reqId if the clearErrorCodes request is successful.
  *
  * @return code indicating whether the clear operation is successful or not
  *        (200 means success, otherwise unsuccessful)
  */
-void clearErrorCodes(ManagedDevice* client, char* reqId)
+void clearErrorCodes(char* reqId)
 {
 	char uuid_str[40];
 	int rc = -1;
@@ -420,15 +459,13 @@ void clearErrorCodes(ManagedDevice* client, char* reqId)
 	char data[125];
 	sprintf(data,"{\"reqId\":\"%s\"}", uuid_str);
 
-	rc = publish(client, CLEAR_DIAG_ERRCODES, data);
+	rc = publish(CLEAR_DIAG_ERRCODES, data);
 	if(rc == SUCCESS)
 		strcpy(reqId, uuid_str);
 }
 
 /**
  * The Log message that needs to be added to the Watson IoT Platform.
- * 
- * @param client reference to the ManagedDevice 
  *
  * @param message The Log message that needs to be added to the Watson IoT Platform.
  *
@@ -443,7 +480,7 @@ void clearErrorCodes(ManagedDevice* client, char* reqId)
  * @return code indicating whether the update is successful or not
  *        (200 means success, otherwise unsuccessful)
  */
-void addLog(ManagedDevice* client,char* message, char* data ,int severity, char* reqId)
+void addLog(char* message, char* data ,int severity, char* reqId)
 {
 	char uuid_str[40];
 	int rc = -1;
@@ -455,22 +492,20 @@ void addLog(ManagedDevice* client,char* message, char* data ,int severity, char*
 	char payload[125];
 	sprintf(payload,"{\"d\":{\"message\":\"%s\",\"timestamp\":\"%s\",\"data\":\"%s\",\"severity\":%d},\"reqId\":\"%s\"}",message,updatedDateTime,data,severity, uuid_str);
 
-	rc = publish(client, ADD_DIAG_LOG, payload );
+	rc = publish(ADD_DIAG_LOG, payload );
 	if(rc == SUCCESS)
 		strcpy(reqId, uuid_str);
 }
 
 /**
  * Clear the Logs from IBM Watson IoT Platform for this device
- * 
- * @param client reference to the ManagedDevice 
  *
  * @param reqId Function returns the reqId if the clearLogs request is successful.
  *
  * @return code indicating whether the clear operation is successful or not
  *        (200 means success, otherwise unsuccessful)
  */
-void clearLogs(ManagedDevice* client, char* reqId){
+void clearLogs(char* reqId){
 	char uuid_str[40];
 	int rc = -1;
 	generateUUID(uuid_str);
@@ -479,23 +514,95 @@ void clearLogs(ManagedDevice* client, char* reqId){
 	char data[125];
 	sprintf(data,"{\"reqId\":\"%s\"}", uuid_str);
 
-	rc = publish(client, CLEAR_DIAG_LOG, data);
+	rc = publish(CLEAR_DIAG_LOG, data);
 	if(rc == SUCCESS)
 		strcpy(reqId, uuid_str);
 }
 
+/**
+ * Notifies the IBM Watson IoT Platform response for action
+ *
+ * @param reqId request Id of the request that is received from the IBM Watson IoT Platform
+ *
+ * @param state state of the request that is request received from the IBM Watson IoT Platform
+ *
+ * @return int return code
+ *
+ */
+int changeState(int rc)
+{
+	char response[100];
+	char msg[100] ;
+	getMessageFromReturnCode(rc,msg);
+	sprintf(response, "{\"rc\":\"%d\",\"message\":\"%s\",\"reqId\":\"%s\"}",rc,msg,currentRequestID);
+	int res = publishActionResponse(RESPONSE, response);
+	printf("Response for action:%d\n",res);
+	return res;
+}
+
+/**
+ * Update the firmware state while downloading firmware and
+ * Notifies the IBM Watson IoT Platform with the updated state
+ *
+ * @param state Download state update received from the device
+ *
+ * @return int return code
+ *
+ */
+int changeFirmwareState(int state) {
+	char firmwareMsg[300];
+	int rc = -1;
+	if (dmClient->bObserve) {
+		dmClient->DeviceData.mgmt.firmware.state = state;
+		sprintf(firmwareMsg,
+				"{\"d\":{\"fields\":[{\"field\" : \"mgmt.firmware\",\"value\":{\"state\":%d}}]}}",
+				state);
+		rc = publishActionResponse(NOTIFY, firmwareMsg);
+		printf("Change changeFirmwareState called published with rc=%d\n", rc);
+	} else
+		printf(
+				"Change changeFirmwareState called but the mgmt.firmware is not in observe state\n");
+	return rc;
+}
+
+/**
+ * Update the firmware update state while updating firmware and
+ * Notifies the IBM Watson IoT Platform with the updated state
+ *
+ * @param state Update state received from the device while updating the Firmware
+ *
+ * @return int return code
+ *
+ */
+int changeFirmwareUpdateState(int state) {
+	char firmwareMsg[300];
+	int rc = -1;
+	if (dmClient->bObserve) {
+		dmClient->DeviceData.mgmt.firmware.updateStatus = state;
+		sprintf(firmwareMsg,
+				"{\"d\":{\"fields\":[{\"field\" : \"mgmt.firmware\",\"value\":{\"state\":%d,\"updateStatus\":%d}}]}}",
+				dmClient->DeviceData.mgmt.firmware.state,state);
+		rc = publishActionResponse(NOTIFY, firmwareMsg);
+		printf("Change changeFirmwareUpdateState called published with rc=%d\n",
+				rc);
+	} else
+		printf(
+				"Change changeFirmwareUpdateState called but the mgmt.firmware is not in observe state\n");
+	return rc;
+}
+
 // Utility function to publish the message to Watson IoT
-int publish(ManagedDevice* client, char* publishTopic, char* data)
+int publish(char* publishTopic, char* data)
 {
 	int rc = -1;
 	MQTTMessage pub;
-	printf("Topic ( %s) payload (\n %s\n ) ", publishTopic,data);
+	printf("Topic ( %s) payload (%s)\n", publishTopic,data);
 	pub.qos = 1;
 	pub.retained = '0';
 	pub.payload = data;
 	pub.payloadlen = strlen(data);
-	signal(SIGINT, sigHandler);
-	signal(SIGTERM, sigHandler);
+	//signal(SIGINT, sigHandler);
+	//signal(SIGTERM, sigHandler);
 	interrupt =0;
 	while(!interrupt)
 		{
@@ -506,6 +613,24 @@ int publish(ManagedDevice* client, char* publishTopic, char* data)
 			if(!interrupt)
 				sleep(2);
 		}
+	return rc;
+}
+
+//Publish actions response to IoTF platform
+int publishActionResponse(char* publishTopic, char* data)
+{
+	int rc = -1;
+	MQTTMessage pub;
+	printf("Topic ( %s) payload (%s)\n", publishTopic,data);
+	pub.qos = 1;
+	pub.retained = '0';
+	pub.payload = data;
+	pub.payloadlen = strlen(data);
+
+	rc = MQTTPublish(&deviceClient.c, publishTopic , &pub);
+	if(rc == SUCCESS) {
+		rc = yield(&deviceClient, 100);
+	}
 	return rc;
 }
 
@@ -536,9 +661,320 @@ void generateUUID(char* uuid_str)
 	strcpy(uuid_str , GUID);
 }
 
-//Handler for all commands. Invoke the callback.
-void messageCame(MessageData* md)
+// Utility function to get message from the return code
+void getMessageFromReturnCode(int rc, char* msg)
+{	
+	switch(rc)
+	{
+	case 202:
+		strcpy(msg ,"Device action initiated immediately");
+		break;
+	case 500:
+		strcpy(msg ,"Device action attempt fails");
+		break;
+	case 501:
+		strcpy(msg, "Device action is not supported");
+		break;
+	}	
+}
+
+//Handler for all requests and responses from the server. This function routes the
+//right handlers
+void onMessage(MessageData* md)
 {
+	printf("onMessage\n");
+	if (md) {
+		MQTTMessage* message = md->message;
+
+		char *topic = malloc(md->topicName->lenstring.len + 1);
+
+		sprintf(topic, "%.*s", md->topicName->lenstring.len,
+				md->topicName->lenstring.data);
+		printf("onMessage topic:%s\n",topic);
+		if(!strcmp(topic,DMRESPONSE)){
+			messageResponse(md);
+		}
+
+		if (!strcmp(topic, dmUpdate)) {
+			messageUpdate(md);
+		}
+
+		if (!strcmp(topic, dmObserve)) {
+			messageObserve(md);
+		}
+
+		if (!strcmp(topic, dmCancel)) {
+			messageCancel(md);
+		}
+
+		if (!strcmp(topic, dmReboot)) {
+			messageForAction(md,1);
+		}
+
+		if (!strcmp(topic, dmFactoryReset)) {
+			messageForAction(md,0);
+		}
+
+		if (!strcmp(topic, dmFirmwareDownload)) {
+			messageFirmwareDownload(md);
+		}
+
+		if (!strcmp(topic, dmFirmwareUpdate)) {
+			messageFirmwareUpdate(md);
+		}
+
+		free(topic);
+	}
+}
+
+//Handler for Firmware Download request
+void messageFirmwareDownload(MessageData* md)
+{
+	int rc = RESPONSE_ACCEPTED;
+	char msg[100];
+	char respmsg[300];
+
+	MQTTMessage* message = md->message;
+	void *payload = message->payload;
+	cJSON * jsonPayload = cJSON_Parse(payload);
+	strcpy(currentRequestID, cJSON_GetObjectItem(jsonPayload, "reqId")->valuestring);
+	printf("messageFirmwareDownload with reqId:%s\n",currentRequestID);
+	if(dmClient->DeviceData.mgmt.firmware.state != FIRMWARESTATE_IDLE)
+	{
+		printf("Error: Firmware Download with Bad Request\n");
+		rc = BAD_REQUEST;
+		strcpy(msg,"Cannot download as the device is not in the idle state");
+	}
+	else
+	{
+		printf("Firmware Download Initiated\n");
+		rc = RESPONSE_ACCEPTED;
+		strcpy(msg,"Firmware Download Initiated");
+	}
+
+	sprintf(respmsg,"{\"rc\":%d,\"reqId\":%s}",rc,currentRequestID);
+	publishActionResponse(RESPONSE, respmsg);
+
+	if(rc == RESPONSE_ACCEPTED)
+		(*cbFirmwareDownload)();
+}
+
+//Handler for Firmware update request
+void messageFirmwareUpdate(MessageData* md)
+{
+	int rc;
+	char respmsg[300];
+	printf("update firmware request called after download\n");
+	printf("Firmware State: %d\n", dmClient->DeviceData.mgmt.firmware.state);
+	if (dmClient->DeviceData.mgmt.firmware.state != FIRMWARE_DOWNLOADED) {
+		printf("Error: Firmware state is not in Downloaded state while updating\n");
+		rc = BAD_REQUEST;
+	} else {
+		rc = RESPONSE_ACCEPTED;
+	}
+	sprintf(respmsg, "{\"rc\":%d,\"reqId\":%s}", rc, currentRequestID);
+	publishActionResponse(RESPONSE, respmsg);
+	if(rc == RESPONSE_ACCEPTED)
+		(*cbFirmwareUpdate)();
+}
+
+//Handler for Observe request
+void messageObserve(MessageData* md) {
+	int i = 0;
+	MQTTMessage* message = md->message;
+	void *payload = message->payload;
+	char* respMsg;
+	cJSON *resPayload, *resd, *resFields;
+	resPayload = cJSON_CreateObject();
+	cJSON_AddItemToObject(resPayload, "rc",
+			cJSON_CreateNumber(RESPONSE_SUCCESS));
+	cJSON * jsonPayload = cJSON_Parse(payload);
+	cJSON* jreqId = cJSON_GetObjectItem(jsonPayload, "reqId");
+	strcpy(currentRequestID, jreqId->valuestring);
+	printf("Observe reqId:%s\n", currentRequestID);
+	cJSON_AddItemToObject(resPayload, "reqId",
+			cJSON_CreateString(currentRequestID));
+
+	cJSON_AddItemToObject(resPayload, "d", resd = cJSON_CreateObject());
+
+	cJSON_AddItemToObject(resd, "fields", resFields =
+			cJSON_CreateArray());
+
+	cJSON *d = cJSON_GetObjectItem(jsonPayload, "d");
+
+	cJSON *fields = cJSON_GetObjectItem(d, "fields");
+
+	//cJSON *fields = cJSON_GetObjectItem(jsonPayload,"fields");
+	for (i = 0; i < cJSON_GetArraySize(fields); i++) {
+		cJSON * field = cJSON_GetArrayItem(fields, i);
+
+		cJSON* fieldName = cJSON_GetObjectItem(field, "field");
+
+		cJSON * value = cJSON_GetArrayItem(fields, i);
+
+		printf("Observe called for fieldName:%s\n",fieldName->valuestring);
+		if (!strcmp(fieldName->valuestring, "mgmt.firmware")) {
+			dmClient->bObserve = true;
+			cJSON* resValue;
+			cJSON* resField = cJSON_CreateObject();
+			cJSON_AddItemToObject(resField, "field", cJSON_CreateString("mgmt.firmware"));
+			cJSON_AddItemToObject(resField, "value", resValue = cJSON_CreateObject());
+			printf("8\n");
+			cJSON_AddItemToObject(resValue, "state",
+					cJSON_CreateNumber(
+							dmClient->DeviceData.mgmt.firmware.state));
+
+			cJSON_AddItemToObject(resValue, "updateStatus",
+					cJSON_CreateNumber(
+							dmClient->DeviceData.mgmt.firmware.updateStatus));
+
+			cJSON_AddItemToArray(resFields,resField);
+
+		}
+	}
+	respMsg = cJSON_Print(resPayload);
+	cJSON_Delete(resPayload);
+	printf("respMsg:%s\n",respMsg);
+	//Publish the response to the IoTF
+	publishActionResponse(RESPONSE, respMsg);
+
+	cJSON_Delete(jsonPayload);
+	free(respMsg);
+}
+
+//Handler for cancel observation request
+void messageCancel(MessageData* md)
+{
+	printf("Cancel request called\n");
+	int i = 0;
+	char respMsg[100];
+	MQTTMessage* message = md->message;
+	void *payload = message->payload;
+	cJSON * jsonPayload = cJSON_Parse(payload);
+	cJSON* jreqId = cJSON_GetObjectItem(jsonPayload, "reqId");
+	strcpy(currentRequestID, jreqId->valuestring);
+	printf("Cancel reqId:%s\n", currentRequestID);
+	cJSON *d = cJSON_GetObjectItem(jsonPayload, "d");
+	cJSON *fields = cJSON_GetObjectItem(d, "fields");
+	//cJSON *fields = cJSON_GetObjectItem(jsonPayload,"fields");
+	for (i = 0; i < cJSON_GetArraySize(fields); i++) {
+		cJSON * field = cJSON_GetArrayItem(fields, i);
+		cJSON* fieldName = cJSON_GetObjectItem(field, "field");
+
+		cJSON * value = cJSON_GetArrayItem(fields, i);
+		printf("cancel called for field:%s\n",fieldName->valuestring);
+		if (!strcmp(fieldName->valuestring, "mgmt.firmware")) {
+			dmClient->bObserve = false;
+			sprintf(respMsg,"{\"rc\":%d,\"reqId\":%s}",RESPONSE_SUCCESS,currentRequestID);
+			//Publish the response to the IoTF
+			publishActionResponse(RESPONSE, respMsg);
+		}
+	}
+}
+
+//Handler for update location request
+void updateLocationRequest(cJSON* value)
+{
+	printf("updateLocationRequest called\n");
+	double latitude, longitude, elevation,accuracy;
+	char* measuredDateTime;
+	char* updatedDateTime;
+	char* reqId;
+
+	latitude = cJSON_GetObjectItem(value,"latitude")->valuedouble;
+	longitude = cJSON_GetObjectItem(value,"longitude")->valuedouble;
+	elevation = cJSON_GetObjectItem(value,"elevation")->valuedouble;
+	accuracy = cJSON_GetObjectItem(value,"accuracy")->valuedouble;
+	measuredDateTime = cJSON_GetObjectItem(value,"measuredDateTime")->valuestring;
+	updatedDateTime = cJSON_GetObjectItem(value,"updatedDateTime")->valuestring;
+	updateLocationEx(latitude, longitude, elevation,measuredDateTime,updatedDateTime,accuracy,reqId);
+}
+
+//Handler for update Firmware request
+void updateFirmwareRequest(cJSON* value) {
+	printf("updateFirmwareRequest called\n");
+	char response[100];
+
+	if(dmClient){
+	cJSON* val = cJSON_GetObjectItem(value, "version");
+	/*if(val)
+		printf("version:%s\n",val->valuestring);
+	else
+		printf("version is NULL\n");
+*/
+	strcpy(dmClient->DeviceData.mgmt.firmware.version,
+			cJSON_GetObjectItem(value, "version")->valuestring);
+	//printf("name:%s\n",cJSON_GetObjectItem(value, "name")->valuestring);
+	strcpy(dmClient->DeviceData.mgmt.firmware.name,
+			cJSON_GetObjectItem(value, "name")->valuestring);
+	//printf("uri:%s\n",cJSON_GetObjectItem(value, "uri")->valuestring);
+	strcpy(dmClient->DeviceData.mgmt.firmware.url,
+			cJSON_GetObjectItem(value, "uri")->valuestring);
+	//printf("verifier:%s\n",cJSON_GetObjectItem(value, "verifier")->valuestring);
+	strcpy(dmClient->DeviceData.mgmt.firmware.verifier,
+			cJSON_GetObjectItem(value, "verifier")->valuestring);
+	//printf("state:%d\n",cJSON_GetObjectItem(value, "state")->valueint);
+	dmClient->DeviceData.mgmt.firmware.state = cJSON_GetObjectItem(value,
+			"state")->valueint;
+	//printf("updateStatus:%d\n",cJSON_GetObjectItem(value, "updateStatus")->valueint);
+	dmClient->DeviceData.mgmt.firmware.updateStatus = cJSON_GetObjectItem(value,
+			"updateStatus")->valueint;
+	//printf("updatedDateTime:%s\n",cJSON_GetObjectItem(value, "updatedDateTime")->valuestring);
+	strcpy(dmClient->DeviceData.mgmt.firmware.updatedDateTime,
+			cJSON_GetObjectItem(value, "updatedDateTime")->valuestring);
+
+	sprintf(response, "{\"rc\":%d,\"reqId\":\"%s\"}", UPDATE_SUCCESS,
+			currentRequestID);
+
+	publishActionResponse(RESPONSE, response);
+	}
+	else
+		printf("dmClient is NULL\n");
+}
+
+//Handler for update request from the server.
+//It receives all the update requests like location, mgmt.firmware
+//Currently only location and firmware updates are supported.
+void messageUpdate(MessageData* md) {
+	int i = 0;
+	MQTTMessage* message = md->message;
+	void *payload = message->payload;
+	cJSON * jsonPayload = cJSON_Parse(payload);
+	if (jsonPayload) {
+		cJSON* jreqId = cJSON_GetObjectItem(jsonPayload, "reqId");
+		strcpy(currentRequestID, jreqId->valuestring);
+		printf("Update reqId:%s\n", currentRequestID);
+		cJSON *d = cJSON_GetObjectItem(jsonPayload, "d");
+		cJSON *fields = cJSON_GetObjectItem(d, "fields");
+
+		for (i = 0; i < cJSON_GetArraySize(fields); i++) {
+			cJSON * field = cJSON_GetArrayItem(fields, i);
+			cJSON* fieldName = cJSON_GetObjectItem(field, "field");
+			printf("update request received for fieldName :%s\n", fieldName->valuestring);
+			cJSON * value = cJSON_GetObjectItem(field, "value");
+
+			if (!strcmp(fieldName->valuestring, "location"))
+				updateLocationRequest(value);
+			else if (!strcmp(fieldName->valuestring, "mgmt.firmware"))
+				updateFirmwareRequest(value);
+			else if (!strcmp(fieldName->valuestring, "metadata"))
+				;	//Currently not supported
+			else if (!strcmp(fieldName->valuestring, "deviceInfo"))
+				;	//Currently not supported
+		}
+		cJSON_Delete(jsonPayload);//Needs to delete the parsed pointer
+	} else
+		printf("Error in parsing Json\n");
+}
+
+//Handler for responses from the server . Invoke the callback for the response.
+//Callback needs to be invoked only if the request Id is matched. While yielding we
+//receives the response for old request Ids from the platform. But we are interested only
+//with the request Id action was initiated.
+void messageResponse(MessageData* md)
+{
+	printf("messageCame\n");
+	fflush(stdout);
 	if(cb != 0) {
 		MQTTMessage* message = md->message;
 		void *payload = message->payload;
@@ -568,6 +1004,50 @@ void messageCame(MessageData* md)
 		{
 			printf("different response came for ID: %s\n",reqID);
 		}
+		free(pl);
+	}
+}
+
+//Handler for Reboot and Factory reset action requests received from the platform.
+//Invoke the respective callback for action.
+void messageForAction(MessageData* md, bool isReboot)
+{
+	//printf("messageForAction called\n");
+	if(cbReboot != 0 ){
+	
+		MQTTMessage* message = md->message;
+
+		char *topic = malloc(md->topicName->lenstring.len + 1);
+
+		sprintf(topic, "%.*s", md->topicName->lenstring.len,
+				md->topicName->lenstring.data);
+
+		void *payload = message->payload;
+		char *pl = (char*) malloc(sizeof(char)*message->payloadlen+1);
+		strcpy(pl,message->payload);
+
+		strtok(topic, "/");
+		strtok(NULL, "/");
+
+		strtok(NULL, "/");
+		strtok(NULL, "/");
+		char *action = strtok(NULL, "/");
+
+		char *reqID;
+
+		reqID = strtok(pl, ":\"");
+		reqID = strtok(NULL, ":\"");
+		reqID = strtok(NULL, ":\"");
+		
+		strcpy(currentRequestID,reqID);
+		printf("reqId: %s action: %s payload: %s\n",reqID, action, (char*)	payload);
+
+		if(isReboot) //If it is reboot
+			(*cbReboot)(reqID, action, payload);
+		else // Factory reset
+			(*cbFactoryReset)(reqID, action, payload);
+
+		free(topic);
 		free(pl);
 	}
 }
