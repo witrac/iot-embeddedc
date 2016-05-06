@@ -6,8 +6,8 @@ Platform.
 
 Installing the Dependencies
 ---------------------------
-a. Run the setup.sh file in the iot-embeddedc directory.
-This script will install following Dependencies.
+Run the setup.sh file in the iot-embeddedc directory.
+This script will install following Dependencies and it will copy the dependencies into the lib directory after making necessary changes.
 
 Dependencies
 ------------
@@ -21,8 +21,7 @@ Dependencies
 2.  cJSON
   https://github.com/DaveGamble/cJSON/archive/master.zip
 
-b. Copy the depencies into the lib directory after making necessary changes.
-
+Note:
 If the dependencies were not able to be installed with the script on the device, manually pull the dependencies from the links mentioned above and follow the steps in the setup.sh file for making the necessary changes.
 
 Embedded C Client Library - Devices
