@@ -19,7 +19,7 @@
 #ifndef IOTCLIENT_H_
 #define IOTCLIENT_H_
 
-#include "MQTTClient.h"
+#include "lib/MQTTClient.h"
 #include <ctype.h>
 
 // all failure return codes must be negative(extending from mqttclient)
@@ -59,8 +59,8 @@ typedef void (*commandCallback)(char* commandName, char *format, void* payload);
 * @param org - Your organization ID
 * @param type - The type of your device
 * @param id - The ID of your device
-* @param auth-method - Method of authentication (the only value currently supported is “token”)
-* @param auth-token - API key token (required if auth-method is “token”)
+* @param auth-method - Method of authentication (the only value currently supported is â€œtokenâ€�)
+* @param auth-token - API key token (required if auth-method is â€œtokenâ€�)
 *
 * @return int return code
 */

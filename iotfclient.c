@@ -259,6 +259,7 @@ int disconnect(Iotfclient *client)
 //Handler for all commands. Invoke the callback.
 void messageArrived(MessageData* md)
 {
+	printf("message arrived\n");
 	if(cb != 0) {
 		MQTTMessage* message = md->message;
 

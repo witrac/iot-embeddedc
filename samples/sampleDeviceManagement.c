@@ -55,20 +55,20 @@ void printOptions(){
 
 }
 
-void populateMgmtConfig(ManagedDevice* client){
-	strcpy(client->DeviceData.deviceInfo.serialNumber, "10087" );
-	strcpy(client->DeviceData.deviceInfo.manufacturer , "IBM");
-	strcpy(client->DeviceData.deviceInfo.model , "7865");
-	strcpy(client->DeviceData.deviceInfo.deviceClass , "A");
-	strcpy(client->DeviceData.deviceInfo.description , "My Ras");
-	strcpy(client->DeviceData.deviceInfo.fwVersion , "1.0.0");
-	strcpy(client->DeviceData.deviceInfo.hwVersion , "1.0");
-	strcpy(client->DeviceData.deviceInfo.descriptiveLocation , "EGL C");
-	strcpy(client->DeviceData.metadata.metadata ,"{}");
+void populateMgmtConfig(){
+	strcpy(dmClient.DeviceData.deviceInfo.serialNumber, "10087" );
+	strcpy(dmClient.DeviceData.deviceInfo.manufacturer , "IBM");
+	strcpy(dmClient.DeviceData.deviceInfo.model , "7865");
+	strcpy(dmClient.DeviceData.deviceInfo.deviceClass , "A");
+	strcpy(dmClient.DeviceData.deviceInfo.description , "My Ras");
+	strcpy(dmClient.DeviceData.deviceInfo.fwVersion , "1.0.0");
+	strcpy(dmClient.DeviceData.deviceInfo.hwVersion , "1.0");
+	strcpy(dmClient.DeviceData.deviceInfo.descriptiveLocation , "EGL C");
+	strcpy(dmClient.DeviceData.metadata.metadata ,"{}");
 }
-void publishEventToIot (ManagedDevice* client){
+void publishEventToIot (){
 	int rc =-1;
-	rc =publishEvent_dm(client, "status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
+	rc =publishEvent_dm("status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
 	if(rc== SUCCESS)
 		printf("Event has been published \n");
 	else
@@ -80,29 +80,27 @@ int main(int argc, char const *argv[])
 {
 	int rc = -1;
 	int x=0;
-	ManagedDevice client;
-
 
 	char *configFilePath = "./device.cfg";
 
-	rc = initialize_configfile(&deviceClient, configFilePath);
+	rc = initialize_configfile_dm(configFilePath);
 	if(rc != SUCCESS){
 		printf("initialize failed and returned rc = %d.\n Quitting..", rc);
 		scanf("%d",&x);
 		return 0;
 	}
 
-	rc = connectiotf_dm(&client);
+	rc = connectiotf_dm();
 	if(rc != SUCCESS){
 		printf("Connection; failed and returned rc = %d.\n Quitting..", rc);
 		scanf("%d",&x);
 		return 0;
 	}
 
-	setCommandHandler_dm(&client, myCallback);
-	setManagedHandler_dm(&client,managedCallBack );
-	subscribeCommands_dm(&client);
-	populateMgmtConfig(&client);
+	setCommandHandler_dm(myCallback);
+	setManagedHandler_dm(managedCallBack );
+	subscribeCommands_dm();
+	populateMgmtConfig();
 	int exit = 0;
 	char reqId[40];
 	while (!exit){
@@ -112,32 +110,32 @@ int main(int argc, char const *argv[])
 		switch (val) {
 			case 1:
 				printf("\n publish manage ..\n");
-				publishManageEvent(&client,4000,1,1, reqId);
+				publishManageEvent(4000,1,1, reqId);
 				printf("\n Manage Event Exited: %s",reqId);
 				break;
 			case 2:
 				printf("\n publish unmanaged..\n");
-				publishUnManageEvent(&client, reqId);
+				publishUnManageEvent(reqId);
 				printf("\nunmanaged Request Exit : %s",reqId);
 				break;
 			case 3:
 				printf("\n publish addErrorCode ..\n");
-				addErrorCode(&client, 121 , reqId);
+				addErrorCode(121 , reqId);
 				printf("\n addErrorCode Request Exit : %s",reqId);
 				break;
 			case 4:
 				printf("\n publish clearErrorCodes ..\n");
-				clearErrorCodes(&client,  reqId);
+				clearErrorCodes(reqId);
 				printf("\n clearErrorCodes Request Exit :");// %s",reqId);
 				break;
 			case 5:
 				printf("\n publish addLog ..\n");
-				addLog(&client, "test","",1, reqId);
+				addLog("test","",1, reqId);
 				printf("\n addLog Request Exit : %s",reqId);
 				break;
 			case 6:
 				printf("\n publish clearLogs ..\n");
-				clearLogs(&client,reqId);
+				clearLogs(reqId);
 				printf("\n clearLogs Request Exit : %s",reqId);
 				break;
 			case 7:
@@ -145,15 +143,15 @@ int main(int argc, char const *argv[])
 				time_t t = time(NULL);
 				char updatedDateTime[50];//"2016-03-01T07:07:56.323Z"
 				strftime(updatedDateTime, sizeof(updatedDateTime), "%Y-%m-%dT%TZ", localtime(&t));
-				updateLocation(&client, 77.5667,12.9667, 0,updatedDateTime, 0, reqId) ;
+				updateLocation(77.5667,12.9667, 0,updatedDateTime, 0, reqId) ;
 				printf("updateLocation Request Exit : %s",reqId);
 				break;
 			case 8:
 				printf("\n publish Event To WIoTP ..\n");
-				publishEventToIot(&client);
+				publishEventToIot();
 				break;
 			default:
-				disconnect_dm(&client);
+				disconnect_dm();
 				printf("\n Quitting!!\n");
 				exit = 1;
 				break;
