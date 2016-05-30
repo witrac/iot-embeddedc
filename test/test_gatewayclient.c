@@ -33,33 +33,34 @@ void testMockconnectGateway(){
 
 }
 */
+struct config gatewayConfig;
+struct config deviceConfig;
 
 void testInitialize(){
 	GatewayClient client;
-	struct config deviceconfig;
 	char gatCfgPath[1024];
 	getDeviceCfgFilePath(gatCfgPath);
 
-	get_config(gatCfgPath, &deviceconfig);
+	get_config(gatCfgPath, &gatewayConfig);
 
 
 	//orgID , deviceType and deviceId cannot be NULL
 	assert_int_equal(
-			initializeGateway(&client, NULL, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
+			initializeGateway(&client, NULL, gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
 			MISSING_INPUT_PARAM);
 	assert_int_equal(
-			initializeGateway(&client, deviceconfig.org, NULL, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
+			initializeGateway(&client, gatewayConfig.org, NULL, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
 			MISSING_INPUT_PARAM);
 	assert_int_equal(
-			initializeGateway(&client, deviceconfig.org, deviceconfig.type, NULL, deviceconfig.authmethod, deviceconfig.authtoken),
+			initializeGateway(&client, gatewayConfig.org, gatewayConfig.type, NULL, gatewayConfig.authmethod, gatewayConfig.authtoken),
 			MISSING_INPUT_PARAM);
 
 	//Successful Initialization
 	//assert_int_equal(initializeGateway(&client, "qbtkem", "haritestGateway", "hariGateway", "token", "sZZvqAXeyt5U0-Fnu7"),SUCCESS);
 	assert_int_equal(
-			initializeGateway(&client, deviceconfig.org, deviceconfig.type,
-					deviceconfig.id, deviceconfig.authmethod,
-					deviceconfig.authtoken), SUCCESS);
+			initializeGateway(&client, gatewayConfig.org, gatewayConfig.type,
+					gatewayConfig.id, gatewayConfig.authmethod,
+					gatewayConfig.authtoken), SUCCESS);
 }
 
 void testInitializeConfigfile(){
@@ -106,11 +107,11 @@ void testGateway(){
 
 	setGatewayCommandHandler(&client, myCallback);
 	subscribeToGatewayCommands(&client);
-	subscribeToDeviceCommands(&client, "devicetest", "haridevice", "+", "+", 0);
+	subscribeToDeviceCommands(&client, deviceConfig.type, deviceConfig.id, "+", "+", 0);
 
 	assert_int_equal(publishGatewayEvent(&client,"status","json", payload , QOS0),0);
 
-	assert_int_equal(publishDeviceEvent(&client, "devicetest","haridevice","status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0),0);
+	assert_int_equal(publishDeviceEvent(&client, deviceConfig.type, deviceConfig.id,"status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0),0);
 
 	//Construct message data for Reboot
 	MessageData md;
@@ -119,7 +120,7 @@ void testGateway(){
 
 	MQTTString topicName;
 	topicName.lenstring.data =
-			"iot-2/type/devicetest/id/haridevice/cmd/command/fmt/json";
+			"iot-2/type/devicetest/id/deviceConfig.id/cmd/command/fmt/json";
 	topicName.lenstring.len = topicLen;
 
 	MQTTMessage msg;
