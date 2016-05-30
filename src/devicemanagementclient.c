@@ -23,7 +23,7 @@
 #include <memory.h>
 #include <time.h>
 #include "devicemanagementclient.h"
-#include "lib/cJSON.h"
+#include "cJSON.h"
 
 commandCallback cb;
 commandCallback cbReboot;
@@ -400,7 +400,7 @@ void updateLocationEx(double latitude, double longitude, double elevation, char*
 	strcpy(currentRequestID,uuid_str);
 		
 	char data[500];
-	sprintf(data,"{\"d\":{\"longitude\":%f,\"latitude\":%f,\"elevation\":%f,\"measuredDateTime\":\"%s\",\"updatedDateTime\":\"%s\",\"accuracy\":%f},\"reqId\":\"%s\"}", latitude, longitude, elevation, updatedDateTime, updatedDateTime, accuracy, uuid_str);
+	sprintf(data,"{\"d\":{\"longitude\":%f,\"latitude\":%f,\"elevation\":%f,\"measuredDateTime\":\"%s\",\"updatedDateTime\":\"%s\",\"accuracy\":%f},\"reqId\":\"%s\"}", latitude, longitude, elevation, updatedDateTime, updatedDateTime, accuracy, currentRequestID);
 
 	rc = publish(UPDATE_LOCATION, data);
 		
@@ -613,7 +613,7 @@ int publishActionResponse(char* publishTopic, char* data)
 {
 	int rc = -1;
 	MQTTMessage pub;
-	printf("Topic ( %s) payload (%s)\n", publishTopic,data);
+//	printf("Topic ( %s) payload (%s)\n", publishTopic,data);
 	pub.qos = 1;
 	pub.retained = '0';
 	pub.payload = data;
@@ -624,6 +624,16 @@ int publishActionResponse(char* publishTopic, char* data)
 		rc = yield(&dmClient.deviceClient, 100);
 	}
 	return rc;
+}
+
+//Utility for LocationUpdate Handler
+void updateLocationHandler(double latitude, double longitude, double elevation, char* measuredDateTime,char* updatedDateTime, double accuracy)
+{
+        int rc = -1;
+        char data[500];
+        sprintf(data,"{\"d\":{\"longitude\":%f,\"latitude\":%f,\"elevation\":%f,\"measuredDateTime\":\"%s\",\"updatedDateTime\":\"%s\",\"accuracy\":%f},\"reqId\":\"%s\"}", latitude, longitude, elevation, updatedDateTime, updatedDateTime, accuracy, currentRequestID);
+
+        rc = publish(UPDATE_LOCATION, data);
 }
 
 // Utility function to generate Unique Identifier
@@ -674,7 +684,7 @@ void getMessageFromReturnCode(int rc, char* msg)
 //right handlers
 void onMessage(MessageData* md)
 {
-	printf("onMessage\n");
+	//printf("onMessage\n");
 	if (md) {
 		MQTTMessage* message = md->message;
 
@@ -811,7 +821,6 @@ void messageObserve(MessageData* md) {
 			cJSON* resField = cJSON_CreateObject();
 			cJSON_AddItemToObject(resField, "field", cJSON_CreateString("mgmt.firmware"));
 			cJSON_AddItemToObject(resField, "value", resValue = cJSON_CreateObject());
-			printf("8\n");
 			cJSON_AddItemToObject(resValue, "state",
 					cJSON_CreateNumber(
 							dmClient.DeviceData.mgmt.firmware.state));
@@ -826,7 +835,6 @@ void messageObserve(MessageData* md) {
 	}
 	respMsg = cJSON_Print(resPayload);
 	cJSON_Delete(resPayload);
-	printf("respMsg:%s\n",respMsg);
 	//Publish the response to the IoTF
 	publishActionResponse(RESPONSE, respMsg);
 
@@ -871,7 +879,6 @@ void updateLocationRequest(cJSON* value)
 	double latitude, longitude, elevation,accuracy;
 	char* measuredDateTime;
 	char* updatedDateTime;
-	char* reqId;
 
 	latitude = cJSON_GetObjectItem(value,"latitude")->valuedouble;
 	longitude = cJSON_GetObjectItem(value,"longitude")->valuedouble;
@@ -879,7 +886,7 @@ void updateLocationRequest(cJSON* value)
 	accuracy = cJSON_GetObjectItem(value,"accuracy")->valuedouble;
 	measuredDateTime = cJSON_GetObjectItem(value,"measuredDateTime")->valuestring;
 	updatedDateTime = cJSON_GetObjectItem(value,"updatedDateTime")->valuestring;
-	updateLocationEx(latitude, longitude, elevation,measuredDateTime,updatedDateTime,accuracy,reqId);
+	updateLocationHandler(latitude, longitude, elevation,measuredDateTime,updatedDateTime,accuracy);
 }
 
 //Handler for update Firmware request
@@ -961,12 +968,13 @@ void messageUpdate(MessageData* md) {
 //with the request Id action was initiated.
 void messageResponse(MessageData* md)
 {
-	printf("messageCame\n");
 	fflush(stdout);
 	if(cb != 0) {
 		MQTTMessage* message = md->message;
 		void *payload = message->payload;
-		char *pl = (char*) malloc(sizeof(char)*message->payloadlen+1);
+		int sz = message->payloadlen;
+		printf("Size of payload:%d",sz);
+		char *pl = (char*) malloc(sizeof(char)*sz+1);
 		strcpy(pl,message->payload);
 		char *reqID;
 		char *status;
