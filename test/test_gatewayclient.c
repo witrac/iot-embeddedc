@@ -38,11 +38,13 @@ struct config deviceConfig;
 
 void testInitialize(){
 	GatewayClient client;
-	char gatCfgPath[1024];
-	getDeviceCfgFilePath(gatCfgPath);
+	char devCfgPath[1024];
+	char gatewayCfgPath[1024];
+	getDeviceCfgFilePath(devCfgPath);
+	getGatewayCfgFilePath(gatewayCfgPath)
 
-	get_config(gatCfgPath, &gatewayConfig);
-
+	get_config(devCfgPath, &deviceConfig);
+	get_config(gatewayCfgPath, &gatewayConfig);
 
 	//orgID , deviceType and deviceId cannot be NULL
 	assert_int_equal(
@@ -65,14 +67,14 @@ void testInitialize(){
 
 void testInitializeConfigfile(){
 	GatewayClient client;
-	char devCfgPath[256];
-	getGatewayCfgFilePath(devCfgPath);
+	char gatewayCfgPath[256];
+	getGatewayCfgFilePath(gatewayCfgPath);
 
 	//Invalid Config File
 	assert_int_not_equal(initializeGateway_configfile(&client,"dummyConfig.cfg"),SUCCESS);
 
 	//Valid Config File with null values
-    assert_int_equal(initializeGateway_configfile(&client,devCfgPath),SUCCESS);
+    assert_int_equal(initializeGateway_configfile(&client,gatewayCfgPath),SUCCESS);
 }
 
 //Command Handler
