@@ -41,7 +41,7 @@ void testInitialize(){
 	char devCfgPath[1024];
 	char gatewayCfgPath[1024];
 	getDeviceCfgFilePath(devCfgPath);
-	getGatewayCfgFilePath(gatewayCfgPath)
+	getGatewayCfgFilePath(gatewayCfgPath);
 
 	get_config(devCfgPath, &deviceConfig);
 	get_config(gatewayCfgPath, &gatewayConfig);
