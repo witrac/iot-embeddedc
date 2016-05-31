@@ -17,7 +17,7 @@
 #include <stdio.h>
 #include <signal.h>
 //#include "iotfclient.h"
-#include "../devicemanagementclient.h"
+#include "devicemanagementclient.h"
 #include <time.h>
 
 volatile int interruption = 0;

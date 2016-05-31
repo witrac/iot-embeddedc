@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include <signal.h>
-#include "../devicemanagementclient.h"
+#include "devicemanagementclient.h"
 #include <time.h>
 
 

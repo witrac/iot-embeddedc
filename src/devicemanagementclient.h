@@ -20,7 +20,7 @@
 #ifndef DEVICEMANAGEMENTCLIENT_H_
 #define DEVICEMANAGEMENTCLIENT_H_
 
-#include "lib/MQTTClient.h"
+#include "MQTTClient.h"
 #include "iotfclient.h"
 #include <ctype.h>
 #include <stdbool.h>

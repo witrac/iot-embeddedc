@@ -1,6 +1,7 @@
 #!/bin/bash
-echo "Cleaning lib"
-rm -rf lib
+echo "Backing lib"
+rm -rf lib_bk
+mv lib lib_bk
 mkdir tmp
 mkdir lib
 cd tmp
@@ -18,8 +19,10 @@ cp org.eclipse.paho.mqtt.embedded-c-1.0.0/MQTTPacket/src/* ../lib/
 cp org.eclipse.paho.mqtt.embedded-c-1.0.0/MQTTClient-C/src/MQTTClient.* ../lib/
 cp org.eclipse.paho.mqtt.embedded-c-1.0.0/MQTTClient-C/src/linux/MQTTLinux.* ../lib/
 cp cJSON-master/cJSON.* ../lib/
+cp ../lib_bk/CMakeLists.txt ../lib/
 cd ..
 echo "removing the temporary files"
 rm -rf ./tmp/
+rm -rf ./lib_bk/
 echo "finished setup"
 
