@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "Backing lib"
-#rm -rf lib
+rm -rf lib_bk
 mv lib lib_bk
 mkdir tmp
 mkdir lib
