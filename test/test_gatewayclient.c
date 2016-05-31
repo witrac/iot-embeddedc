@@ -121,8 +121,9 @@ void testGateway(){
 	int loadLen = 30;
 
 	MQTTString topicName;
-	topicName.lenstring.data =
-			"iot-2/type/devicetest/id/deviceConfig.id/cmd/command/fmt/json";
+	char topicstr[150];
+	sprintf(topicstr,"iot-2/type/%s/id/%s/cmd/command/fmt/json",deviceConfig.type,deviceConfig.id);
+	topicName.lenstring.data = topicstr;
 	topicName.lenstring.len = topicLen;
 
 	MQTTMessage msg;
