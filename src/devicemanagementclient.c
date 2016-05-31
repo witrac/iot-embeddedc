@@ -973,7 +973,6 @@ void messageResponse(MessageData* md)
 		MQTTMessage* message = md->message;
 		void *payload = message->payload;
 		int sz = message->payloadlen;
-		printf("Size of payload:%d",sz);
 		char *pl = (char*) malloc(sizeof(char)*sz+1);
 		strcpy(pl,message->payload);
 		char *reqID;
