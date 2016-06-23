@@ -152,7 +152,6 @@ int connectGateway(GatewayClient *client)
 	data.keepAliveInterval = keepAliveInterval;
 	data.cleansession = 1;
 	
-	printf("Keep Alive Interval:%d\n",data.keepAliveInterval);
 	rc = MQTTConnect(&client->c, &data);
 
 	//Subscibe to all commands in gateway by default
