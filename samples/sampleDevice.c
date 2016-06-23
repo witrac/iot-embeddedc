@@ -55,6 +55,9 @@ int main(int argc, char const *argv[])
 		return 0;
 	}
 
+	//unsigned short interval = 59;
+	//setKeepAliveInterval(interval);
+
 	rc = connectiotf(&client);
 
 	if(rc != SUCCESS){

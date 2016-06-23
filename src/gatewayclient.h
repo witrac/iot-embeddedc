@@ -27,6 +27,7 @@ enum errorCodes { CONFIG_FILE_ERROR = -3, MISSING_INPUT_PARAM = -4, QUICKSTART_N
 //configuration file structure
 struct config {
 	char org[15];
+	char domain[100];
 	char type[50];
 	char id[50];
 	char authmethod[10];
@@ -46,6 +47,8 @@ struct gatewayclient
 
 typedef struct gatewayclient GatewayClient;
 
+extern unsigned short keepAliveInterval;
+
 //Callback used to process commands
 typedef void (*commandCallback)(char* type, char* id, char* commandName, char *format, void* payload, size_t payloadlen);
 
@@ -53,6 +56,7 @@ typedef void (*commandCallback)(char* type, char* id, char* commandName, char *f
 * Function used to initialize the Watson IoT Gateway client
 * @param client - Reference to the GatewayClient
 * @param org - Your organization ID
+* @param domain - Your domain Name
 * @param type - The type of your Gateway
 * @param id - The ID of your Gateway
 * @param auth-method - Method of authentication (the only value currently supported is “token”)
@@ -60,7 +64,7 @@ typedef void (*commandCallback)(char* type, char* id, char* commandName, char *f
 *
 * @return int return code
 */
-int initializeGateway(GatewayClient *client, char *orgId, char *gwType, char *gwId, char *authmethod, char *authtoken);
+int initializeGateway(GatewayClient *client, char *orgId, char *domain, char *gwType, char *gwId, char *authmethod, char *authtoken);
 /**
 * Function used to initialize the Watson IoT Gateway client using the config file which is generated when you register your device
 * @param client - Reference to the GatewayClient
@@ -153,5 +157,12 @@ int gatewayYield(GatewayClient *client, int time_ms);
 * @return int return code
 */
 int disconnectGateway(GatewayClient *client);
+
+/**
+* Function used to set the time to keep the connection alive with IBM Watson IoT service
+* @param keepAlive - time in secs
+*
+*/
+void setKeepAliveInterval(unsigned int keepAlive);
 
 #endif /* GATEWAYCLIENT_H_ */

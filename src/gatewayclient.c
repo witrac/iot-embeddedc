@@ -35,6 +35,8 @@ int reconnect_delay(int i);
 char* subscribeTopics[5];
 int subscribeCount = 0;
 
+unsigned short keepAliveInterval = 60;
+
 /**
 * Function used to initialize the Watson IoT Gateway client using the config file which is generated when you register your device
 * @param client - Reference to the GatewayClient
@@ -46,7 +48,7 @@ int subscribeCount = 0;
 */
 int initializeGateway_configfile(GatewayClient *client, char *configFilePath)
 {
-	struct config configstr = {"", "", "", "", ""};
+	struct config configstr = {"", "internetofthings.ibmcloud.com", "", "", "", ""};
 
 	int rc = 0;
 
@@ -80,16 +82,17 @@ int initializeGateway_configfile(GatewayClient *client, char *configFilePath)
 * MISSING_INPUT_PARAM -4 - Mandatory paramters missing
 * QUICKSTART_NOT_SUPPORTED -5 - Gateway is not supported in Quickstart
 */
-int initializeGateway(GatewayClient *client, char *orgId, char *gwType, char *gwId, char *authmethod, char *authtoken)
+int initializeGateway(GatewayClient *client, char *orgId, char *domainName, char *gwType, char *gwId, char *authmethod, char *authtoken)
 {
 
-	struct config configstr = {"", "", "", "", ""};
+	struct config configstr = {"", "", "internetofthings.ibmcloud.com", "", "", ""};
 
 	if(orgId==NULL || gwType==NULL || gwId==NULL) {
 		return MISSING_INPUT_PARAM;
 	}
 
 	strncpy(configstr.org, orgId, 15);
+	strncpy(configstr.domain, domainName, 100);
 	strncpy(configstr.type, gwType, 50);
 	strncpy(configstr.id, gwId, 50);
 
@@ -117,7 +120,11 @@ int connectGateway(GatewayClient *client)
 
 	int rc = 0;
 
-	const char* messagingUrl = ".messaging.internetofthings.ibmcloud.com";
+	//const char* messagingUrl = ".messaging.internetofthings.ibmcloud.com";
+	char messagingUrl[120];
+	sprintf(messagingUrl, ".messaging.%s", client->config.domain);
+
+	printf("Messaging url;%s\n", messagingUrl);
 
 	char hostname[strlen(client->config.org) + strlen(messagingUrl) + 1];
 	
@@ -142,9 +149,10 @@ int connectGateway(GatewayClient *client)
 	data.username.cstring = "use-token-auth";
 	data.password.cstring = client->config.authtoken;
 
-	data.keepAliveInterval = 10;
+	data.keepAliveInterval = keepAliveInterval;
 	data.cleansession = 1;
 	
+	printf("Keep Alive Interval:%d\n",data.keepAliveInterval);
 	rc = MQTTConnect(&client->c, &data);
 
 	//Subscibe to all commands in gateway by default
@@ -329,6 +337,17 @@ int disconnectGateway(GatewayClient *client)
 
 }
 
+/**
+* Function used to set the time to keep the connection alive with IBM Watson IoT service
+* @param keepAlive - time in secs
+*
+*/
+void setKeepAliveInterval(unsigned int keepAlive)
+{
+	keepAliveInterval = keepAlive;
+
+}
+
 //Handler for all commands. Invoke the callback.
 void messageArrived(MessageData* md)
 {
@@ -424,6 +443,8 @@ int get_config(char * filename, struct config * configstr) {
 		value = trim(value);
 		if (strcmp(prop, "org") == 0)
 			strncpy(configstr->org, value, 10);
+		else if (strcmp(prop, "domain") == 0)
+			strncpy(configstr->domain, value, 100);
 		else if (strcmp(prop, "type") == 0)
 			strncpy(configstr->type, value, 50);
 		else if (strcmp(prop, "id") == 0)

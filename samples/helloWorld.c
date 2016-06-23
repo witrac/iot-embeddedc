@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 	Iotfclient client;
 
 	// for Quickstart, no need to pass the authmethod and token(last 2 params)
-	rc = initialize(&client,"quickstart","iotsample",deviceId,NULL,NULL);
+	rc = initialize(&client,"quickstart", "internetofthings.ibmcloud.com", "iotsample", deviceId, NULL, NULL);
 
 	// For registered mode
 	// rc = initialize(&client,"ordid","deviceType","deviceid","token","r+i2I720I+EkZe1c@8");

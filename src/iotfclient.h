@@ -30,6 +30,7 @@ enum errorCodes { CONFIG_FILE_ERROR = -3, MISSING_INPUT_PARAM = -4 };
 //configuration file structure
 struct config {
 	char org[15];
+	char domain[100];
 	char type[50];
 	char id[50];
 	char authmethod[10];
@@ -42,7 +43,6 @@ struct iotfclient
 	Network n;
 	Client c;
 	struct config config;
-
 	unsigned char buf[BUFFER_SIZE];
         unsigned char readbuf[BUFFER_SIZE];
         int isQuickstart;
@@ -50,7 +50,9 @@ struct iotfclient
 
 typedef struct iotfclient Iotfclient;
 
-#define Iotfclient_initializer { NULL, DefaultClient, {"", "", "", "", ""} }
+extern unsigned short keepAliveInterval;
+
+#define Iotfclient_initializer { NULL, DefaultClient, {"", "", "","", "", ""} }
 
 //Callback used to process commands
 typedef void (*commandCallback)(char* commandName, char *format, void* payload);
@@ -59,6 +61,7 @@ typedef void (*commandCallback)(char* commandName, char *format, void* payload);
 * Function used to initialize the Watson IoT client
 * @param client - Reference to the Iotfclient
 * @param org - Your organization ID
+* @param domain - Your domain Name
 * @param type - The type of your device
 * @param id - The ID of your device
 * @param auth-method - Method of authentication (the only value currently supported is â€œtokenâ€�)
@@ -66,7 +69,7 @@ typedef void (*commandCallback)(char* commandName, char *format, void* payload);
 *
 * @return int return code
 */
-int initialize(Iotfclient *client, char *orgId, char *deviceType, char *deviceId, char *authmethod, char *authtoken);
+int initialize(Iotfclient *client, char *orgId, char *domain, char *deviceType, char *deviceId, char *authmethod, char *authtoken);
 /**
 * Function used to initialize the IBM Watson IoT client using the config file which is generated when you register your device
 * @param client - Reference to the Iotfclient
@@ -138,5 +141,12 @@ int yield(Iotfclient *client, int time_ms);
 * @return int return code
 */
 int disconnect(Iotfclient *client);
+
+/**
+* Function used to set the time to keep the connection alive with IBM Watson IoT service
+* @param keepAlive - time in secs
+*
+*/
+void setKeepAliveInterval(unsigned int keepAlive);
 
 #endif /* IOTCLIENT_H_ */

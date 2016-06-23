@@ -34,7 +34,7 @@ int length(char *str);
 int retry_connection(Iotfclient *client);
 int reconnect_delay(int i);
 
-
+unsigned short keepAliveInterval = 60;
 /**
 * Function used to initialize the IBM Watson IoT client using the config file which is generated when you register your device
 * @param configFilePath - File path to the configuration file 
@@ -45,7 +45,7 @@ int reconnect_delay(int i);
 */
 int initialize_configfile(Iotfclient *client, char *configFilePath)
 {
-	struct config configstr = {"", "", "", "", ""};
+	struct config configstr = {"", "internetofthings.ibmcloud.com", "", "", "", ""};
 
 	int rc = 0;
 
@@ -75,16 +75,17 @@ int initialize_configfile(Iotfclient *client, char *configFilePath)
 *
 * @return int return code
 */
-int initialize(Iotfclient *client, char *orgId, char *deviceType, char *deviceId, char *authmethod, char *authToken)
+int initialize(Iotfclient *client, char *orgId, char* domainName, char *deviceType, char *deviceId, char *authmethod, char *authToken)
 {
 
-	struct config configstr = {"", "", "", "", ""};
+	struct config configstr = {"", "internetofthings.ibmcloud.com", "", "", "", ""};
 
 	if(orgId==NULL || deviceType==NULL || deviceId==NULL) {
 		return MISSING_INPUT_PARAM;
 	}
 
 	strncpy(configstr.org, orgId, 15);
+	strncpy(configstr.domain, domainName, 100);
 	strncpy(configstr.type, deviceType, 50);
 	strncpy(configstr.id, deviceId, 50);
 
@@ -116,8 +117,8 @@ int connectiotf(Iotfclient *client)
 		client->isQuickstart = 1 ;
 	}
 
-	const char* messagingUrl = ".messaging.internetofthings.ibmcloud.com";
-
+	char messagingUrl[120];
+	sprintf(messagingUrl, ".messaging.%s",client->config.domain);
 	char hostname[strlen(client->config.org) + strlen(messagingUrl) + 1];
 	
 	sprintf(hostname, "%s%s", client->config.org, messagingUrl);
@@ -143,7 +144,8 @@ int connectiotf(Iotfclient *client)
 		data.password.cstring = client->config.authtoken;
 	}
 
-	data.keepAliveInterval = 60;
+	data.keepAliveInterval = keepAliveInterval;
+	printf("Keep Alive Int:%d\n",data.keepAliveInterval);
 	data.cleansession = 1;
 	
 	rc = MQTTConnect(&client->c, &data);
@@ -256,6 +258,17 @@ int disconnect(Iotfclient *client)
 
 }
 
+/**
+* Function used to set the time to keep the connection alive with IBM Watson IoT service
+* @param keepAlive - time in secs
+*
+*/
+void setKeepAliveInterval(unsigned int keepAlive)
+{
+	keepAliveInterval = keepAlive;
+
+}
+
 //Handler for all commands. Invoke the callback.
 void messageArrived(MessageData* md)
 {
@@ -276,9 +289,11 @@ void messageArrived(MessageData* md)
 		strtok(NULL, "/");
 		char *format = strtok(NULL, "/");
 
-		free(topic);
 
 		(*cb)(commandName, format, payload);
+		
+		free(topic);
+
 	}
 }
 
@@ -345,7 +360,9 @@ int get_config(char * filename, struct config * configstr) {
 		value = strtok(NULL, "=");
 		value = trim(value);
 		if (strcmp(prop, "org") == 0)
-			strncpy(configstr->org, value, 10);
+			strncpy(configstr->org, value, 15);
+		else if (strcmp(prop, "domain") == 0)
+			strncpy(configstr->domain, value, 100);
 		else if (strcmp(prop, "type") == 0)
 			strncpy(configstr->type, value, 50);
 		else if (strcmp(prop, "id") == 0)

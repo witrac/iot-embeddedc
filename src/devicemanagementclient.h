@@ -155,6 +155,8 @@ int initialize_configfile_dm(char *configFilePath);
 *
 * @param org - Your organization ID
 *
+* @param domain - Your domain Name
+*
 * @param type - The type of your device
 *
 * @param id - The ID of your device
@@ -165,7 +167,7 @@ int initialize_configfile_dm(char *configFilePath);
 *
 * @return int return code
 */
-int initialize_dm(char *orgId, char *deviceType, char *deviceId, char *authmethod, char *authToken);
+int initialize_dm(char *orgId, char *domianName, char *deviceType, char *deviceId, char *authmethod, char *authToken);
 
 /**
 * Function used to connect the device to IBM Watson IoT client

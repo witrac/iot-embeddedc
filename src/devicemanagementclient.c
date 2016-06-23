@@ -92,10 +92,10 @@ int initialize_configfile_dm(char *configFilePath)
 *
 * @return int return code
 */
-int initialize_dm(char *orgId, char *deviceType, char *deviceId, char *authmethod, char *authToken)
+int initialize_dm(char *orgId, char* domainName, char *deviceType, char *deviceId, char *authmethod, char *authToken)
 {
 	int rc = -1;
-	rc = initialize(&dmClient.deviceClient, orgId, deviceType, deviceId, authmethod, authToken);
+	rc = initialize(&dmClient.deviceClient, orgId, domainName, deviceType, deviceId, authmethod, authToken);
 	return rc;
 }
 

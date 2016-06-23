@@ -57,6 +57,8 @@ int main(int argc, char const *argv[])
 		return 0;
 	}
 
+	setKeepAliveInterval(59);
+
 	rc = connectGateway(&client);
 
 	if(rc != SUCCESS){
