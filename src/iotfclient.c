@@ -145,7 +145,6 @@ int connectiotf(Iotfclient *client)
 	}
 
 	data.keepAliveInterval = keepAliveInterval;
-	printf("Keep Alive Int:%d\n",data.keepAliveInterval);
 	data.cleansession = 1;
 	
 	rc = MQTTConnect(&client->c, &data);
