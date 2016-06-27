@@ -86,7 +86,7 @@ static int setup(){
 	char devCfgPath[1024];
 	getDeviceCfgFilePath(devCfgPath);
 	rc = initialize_configfile(pclient,devCfgPath);
-	//rc |= connectiotf(pclient);
+	rc = connectiotf(pclient);
 
 	return rc;
 }

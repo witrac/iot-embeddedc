@@ -59,13 +59,6 @@ void testInitialize(){
 	assert_int_equal(
 			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, gatewayConfig.type, NULL, gatewayConfig.authmethod, gatewayConfig.authtoken),
 			MISSING_INPUT_PARAM);
-	assert_int_equal(
-			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, gatewayConfig.type, gatewayConfig.id, NULL, gatewayConfig.authtoken),
-			MISSING_INPUT_PARAM);
-	assert_int_equal(
-			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, NULL),
-			MISSING_INPUT_PARAM);
-
 
 
 	//Successful Initialization
