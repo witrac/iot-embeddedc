@@ -68,7 +68,9 @@ void testConnectIotf(){
 	assert_int_equal(isConnected(&client),1);
 
 	//Connect in quickstart mode
-	assert_int_equal(initialize(&client, "quickstart", deviceconfig.domain, deviceconfig.type, deviceconfig.id, NULL, NULL),SUCCESS);
+	struct config devconfig = {"", "internetofthings.ibmcloud.com", "", "", "", ""};
+	get_config(devCfgPath, &devconfig);	
+	assert_int_equal(initialize(&client, "quickstart", devconfig.domain, devconfig.type, devconfig.id, NULL, NULL),SUCCESS);
 	assert_int_equal(connectiotf(&client),0);
 
 	//Client is connected
