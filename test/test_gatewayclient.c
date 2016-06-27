@@ -51,10 +51,10 @@ void testInitialize(){
 			initializeGateway(&client, NULL, gatewayConfig.domain, gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
 			MISSING_INPUT_PARAM);
 	assert_int_equal(
-			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, NULL, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
-			MISSING_INPUT_PARAM);
+                        initializeGateway(&client, gatewayConfig.org, NULL, gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
+                        SUCCESS);
 	assert_int_equal(
-			initializeGateway(&client, gatewayConfig.org, NULL, gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
+			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, NULL, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
 			MISSING_INPUT_PARAM);
 	assert_int_equal(
 			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, gatewayConfig.type, NULL, gatewayConfig.authmethod, gatewayConfig.authtoken),

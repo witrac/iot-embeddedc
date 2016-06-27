@@ -22,7 +22,7 @@ void testInitialize(){
 	//int initialize(Iotfclient *client, char *orgId, deviceconfig.domain, char *deviceType, char *deviceId, char *authmethod, char *authToken)
     //orgID , deviceType and deviceId cannot be NULL
 	assert_int_equal(initialize(&client, NULL, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),MISSING_INPUT_PARAM);
-	assert_int_equal(initialize(&client, deviceconfig.org, NULL, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),MISSING_INPUT_PARAM);
+	assert_int_equal(initialize(&client, deviceconfig.org, NULL, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),SUCCESS);
 	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, NULL, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),MISSING_INPUT_PARAM);
 	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, NULL, deviceconfig.authmethod, deviceconfig.authtoken),MISSING_INPUT_PARAM);
 

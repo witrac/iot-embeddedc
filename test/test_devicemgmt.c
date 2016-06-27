@@ -32,7 +32,7 @@ void testInitialize(){
 			MISSING_INPUT_PARAM);
 	assert_int_equal(
 			initialize_dm( deviceconfig.org, NULL, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
-			MISSING_INPUT_PARAM);
+			SUCCESS);
 	assert_int_equal(
 			initialize_dm( deviceconfig.org, deviceconfig.domain, NULL, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
 			MISSING_INPUT_PARAM);
