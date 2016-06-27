@@ -28,31 +28,34 @@ void testInitialize(){
 
     //orgID , deviceType and deviceId cannot be NULL
 	assert_int_equal(
-			initialize_dm( NULL, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
+			initialize_dm( NULL, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
 			MISSING_INPUT_PARAM);
 	assert_int_equal(
-			initialize_dm( deviceconfig.org, NULL, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
+			initialize_dm( deviceconfig.org, NULL, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
 			MISSING_INPUT_PARAM);
 	assert_int_equal(
-			initialize_dm( deviceconfig.org, deviceconfig.type, NULL, deviceconfig.authmethod, deviceconfig.authtoken),
+			initialize_dm( deviceconfig.org, deviceconfig.domain, NULL, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
+			MISSING_INPUT_PARAM);
+	assert_int_equal(
+			initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type, NULL, deviceconfig.authmethod, deviceconfig.authtoken),
 			MISSING_INPUT_PARAM);
 
 	//In registered mode, authmethod and authtoken cannot be NULL
 	assert_int_equal(
-			initialize_dm( deviceconfig.org, deviceconfig.type, deviceconfig.id, NULL, deviceconfig.authtoken),
+			initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, NULL, deviceconfig.authtoken),
 			MISSING_INPUT_PARAM);
 	assert_int_equal(
-			initialize_dm( deviceconfig.org, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, NULL),
+			initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, NULL),
 			MISSING_INPUT_PARAM);
 
 	//In quickstart mode, authmethod and authtoken can be NULL
 	assert_int_equal(
-			initialize_dm( "quickstart", deviceconfig.type, deviceconfig.id, NULL, NULL),
+			initialize_dm( "quickstart", deviceconfig.domain, deviceconfig.type, deviceconfig.id, NULL, NULL),
 			SUCCESS);
 
 	//Successful Initialization
 	assert_int_equal(
-			initialize_dm( deviceconfig.org, deviceconfig.type,deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken), SUCCESS);
+			initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type,deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken), SUCCESS);
 }
 
 void testInitializeConfigfile(){
@@ -86,7 +89,7 @@ void testConnectIotf(){
 	assert_int_equal(isConnected_dm(),1);
 
 	//Connect in quickstart mode
-	assert_int_equal(initialize_dm("quickstart", "sample", "first", NULL, NULL),SUCCESS);
+	assert_int_equal(initialize_dm("quickstart", "internetofthings.ibmcloud.com", "sample", "first", NULL, NULL),SUCCESS);
 	assert_int_equal(connectiotf_dm(),1);
 
 	//Client is connected
