@@ -87,7 +87,7 @@ int initializeGateway(GatewayClient *client, char *orgId, char *domainName, char
 
 	struct config configstr = {"", "", "internetofthings.ibmcloud.com", "", "", ""};
 
-	if(orgId==NULL || gwType==NULL || gwId==NULL) {
+	if(orgId==NULL || domainName==NULL || gwType==NULL || gwId==NULL) {
 		return MISSING_INPUT_PARAM;
 	}
 
@@ -152,6 +152,7 @@ int connectGateway(GatewayClient *client)
 	data.keepAliveInterval = keepAliveInterval;
 	data.cleansession = 1;
 	
+	printf("Keep Alive Interval:%d\n",data.keepAliveInterval);
 	rc = MQTTConnect(&client->c, &data);
 
 	//Subscibe to all commands in gateway by default

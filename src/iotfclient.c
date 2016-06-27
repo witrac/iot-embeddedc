@@ -80,7 +80,7 @@ int initialize(Iotfclient *client, char *orgId, char* domainName, char *deviceTy
 
 	struct config configstr = {"", "internetofthings.ibmcloud.com", "", "", "", ""};
 
-	if(orgId==NULL || deviceType==NULL || deviceId==NULL) {
+	if(orgId==NULL || domainName==NULL || deviceType==NULL || deviceId==NULL) {
 		return MISSING_INPUT_PARAM;
 	}
 
@@ -145,6 +145,7 @@ int connectiotf(Iotfclient *client)
 	}
 
 	data.keepAliveInterval = keepAliveInterval;
+	printf("Keep Alive Int:%d\n",data.keepAliveInterval);
 	data.cleansession = 1;
 	
 	rc = MQTTConnect(&client->c, &data);

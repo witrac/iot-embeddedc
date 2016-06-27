@@ -19,21 +19,15 @@ void testInitialize(){
 
 	get_config(devCfgPath, &deviceconfig);
 
-	printf("1");
 	//int initialize(Iotfclient *client, char *orgId, deviceconfig.domain, char *deviceType, char *deviceId, char *authmethod, char *authToken)
     //orgID , deviceType and deviceId cannot be NULL
 	assert_int_equal(initialize(&client, NULL, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),MISSING_INPUT_PARAM);
-	printf("2");
 	assert_int_equal(initialize(&client, deviceconfig.org, NULL, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),MISSING_INPUT_PARAM);
-	printf("3");
 	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, NULL, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),MISSING_INPUT_PARAM);
-	printf("3");
 	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, NULL, deviceconfig.authmethod, deviceconfig.authtoken),MISSING_INPUT_PARAM);
 
 	//In registered mode, authmethod and authtoken cannot be NULL
-	printf("4");
 	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, NULL, deviceconfig.authtoken),MISSING_INPUT_PARAM);
-	printf("5");
 	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, NULL),MISSING_INPUT_PARAM);
 
 	//In quickstart mode, authmethod and authtoken can be NULL
