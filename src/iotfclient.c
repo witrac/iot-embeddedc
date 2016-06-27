@@ -80,12 +80,13 @@ int initialize(Iotfclient *client, char *orgId, char* domainName, char *deviceTy
 
 	struct config configstr = {"", "internetofthings.ibmcloud.com", "", "", "", ""};
 
-	if(orgId==NULL || domainName==NULL || deviceType==NULL || deviceId==NULL) {
+	if(orgId==NULL || deviceType==NULL || deviceId==NULL) {
 		return MISSING_INPUT_PARAM;
 	}
 
 	strncpy(configstr.org, orgId, 15);
-	strncpy(configstr.domain, domainName, 100);
+	if(domainName != NULL)
+		strncpy(configstr.domain, domainName, 100);
 	strncpy(configstr.type, deviceType, 50);
 	strncpy(configstr.id, deviceId, 50);
 
