@@ -27,7 +27,7 @@ void testMockconnectGateway(){
 	assert_int_equal(connectGateway(&client),0);
 
 	//Connect in quickstart mode
-	assert_int_equal(initialize(&client, "quickstart", "haritestGateway", "hariGateway", NULL, NULL),SUCCESS);
+	assert_int_equal(initialize(&client, "quickstart", "internetofthings.ibmcloud.com", "haritestGateway", "hariGateway", NULL, NULL),SUCCESS);
 	will_return(connectGateway,0);
 	assert_int_equal(connectGateway(&client),0);
 
@@ -48,20 +48,23 @@ void testInitialize(){
 
 	//orgID , deviceType and deviceId cannot be NULL
 	assert_int_equal(
-			initializeGateway(&client, NULL, gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
+			initializeGateway(&client, NULL, gatewayConfig.domain, gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
 			MISSING_INPUT_PARAM);
 	assert_int_equal(
-			initializeGateway(&client, gatewayConfig.org, NULL, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
+                        initializeGateway(&client, gatewayConfig.org, NULL, gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
+                        SUCCESS);
+	assert_int_equal(
+			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, NULL, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
 			MISSING_INPUT_PARAM);
 	assert_int_equal(
-			initializeGateway(&client, gatewayConfig.org, gatewayConfig.type, NULL, gatewayConfig.authmethod, gatewayConfig.authtoken),
+			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, gatewayConfig.type, NULL, gatewayConfig.authmethod, gatewayConfig.authtoken),
 			MISSING_INPUT_PARAM);
 
+
 	//Successful Initialization
-	//assert_int_equal(initializeGateway(&client, "qbtkem", "haritestGateway", "hariGateway", "token", "sZZvqAXeyt5U0-Fnu7"),SUCCESS);
 	assert_int_equal(
-			initializeGateway(&client, gatewayConfig.org, gatewayConfig.type,
-					gatewayConfig.id, gatewayConfig.authmethod,
+			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, gatewayConfig.type,
+			gatewayConfig.id, gatewayConfig.authmethod,
 					gatewayConfig.authtoken), SUCCESS);
 }
 

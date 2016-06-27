@@ -85,7 +85,8 @@ int initialize(Iotfclient *client, char *orgId, char* domainName, char *deviceTy
 	}
 
 	strncpy(configstr.org, orgId, 15);
-	strncpy(configstr.domain, domainName, 100);
+	if(domainName != NULL)
+		strncpy(configstr.domain, domainName, 100);
 	strncpy(configstr.type, deviceType, 50);
 	strncpy(configstr.id, deviceId, 50);
 
