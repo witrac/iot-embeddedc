@@ -24,6 +24,20 @@ Dependencies
 Note:
 If the dependencies were not able to be installed with the script on the device, manually pull the dependencies from the links mentioned above and follow the steps in the setup.sh file for making the necessary changes.
 
+Supported Features
+------------------
+
+| Feature   |      Supported?      |
+|----------|:-------------:|
+| Device connectivity |  &#10004; |
+| Gateway connectivity |    &#10004;   |
+| SSL/TLS | &#10008; |
+| Client side Certificate based authentication | &#10008; |
+| Device Management | &#10004; |
+| Device Management Extension(DME) | &#10008; |
+| Auto reconnect | &#10008; |
+| Event/Command publish using MQTT| &#10004; |
+
 Embedded C Client Library - Devices
 ===================================
 
