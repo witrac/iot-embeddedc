@@ -1,28 +1,7 @@
 Embedded C Client Library - Introduction
 ========================================
 
-Embedded C client for interacting with the IBM Watson Internet of Things
-Platform.
-
-Installing the Dependencies
----------------------------
-Run the setup.sh file in the iot-embeddedc directory.
-This script will install following Dependencies and it will copy the dependencies into the lib directory after making necessary changes.
-
-Dependencies
-------------
-
-1.  [Embedded C MQTT Client]
-
-  [Embedded C MQTT Client]: http://www.eclipse.org/paho/clients/c/embedded/
-  Following version of paho MQTT library is used for this client library
-  http://git.eclipse.org/c/paho/org.eclipse.paho.mqtt.embedded-c.git/snapshot/org.eclipse.paho.mqtt.embedded-c-1.0.0.tar.gz
-  
-2.  cJSON
-  https://github.com/DaveGamble/cJSON/archive/master.zip
-
-Note:
-If the dependencies were not able to be installed with the script on the device, manually pull the dependencies from the links mentioned above and follow the steps in the setup.sh file for making the necessary changes.
+Embedded C client for interacting with the IBM Watson Internet of Things Platform.
 
 Supported Features
 ------------------
@@ -31,20 +10,57 @@ Supported Features
 |----------|:-------------:|
 | Device connectivity |  &#10004; |
 | Gateway connectivity |    &#10004;   |
-| SSL/TLS | &#10008; |
-| Client side Certificate based authentication | &#10008; |
-| Device Management | &#10004; |
+| SSL/TLS | &#10004; |
+| Client side Certificate based authentication | &#10004; |
+| Device Management for Devices | &#10004; |
+| Device Management for Gateway | &#10008; |
 | Device Management Extension(DME) | &#10008; |
 | Auto reconnect | &#10008; |
 | Event/Command publish using MQTT| &#10004; |
 
+Getting the Source
+------------------
+Embedded C Client library source is available at github repository - https://github.com/ibm-watson-iot/iot-embeddedc.git
+
+Get the source from github repository: `git clone https://github.com/ibm-watson-iot/iot-embeddedc.git`
+
+We shoud now have a directory `iot-embeddedc`, which is our `IOT_EMBDC_HOME`.
+
+Install the Dependencies and Build the library
+-------------------------------------------------
+1. Set the environment variable IOT_EMBDC_HOME: `export IOT_EMBDC_HOME=$HOME/iot-embeddedc/`
+2. Change to $IOT_EMBDC_HOME path and run the script - `cd $IOT_EMBDC_HOME ; ./setup.sh`
+
+The setsup.sh script installs listed dependencies under Dependencies Section and it copies the dependencies into the lib directory after making necessary changes.
+
+3. Create directory build within $IOT_EMBDC_HOME Path: `mkdir $IOT_EMBDC_HOME/build`
+4. Change to $IOT_EMBDC_HOME/build direcotyr to build the library: `cd $IOT_EMBDC_HOME/build`
+5. Run CMake to collect all required build details and to create Makefile: `cmake ..`
+6. Run make to build the library, samples and tests: `make`
+
+Dependencies
+------------
+
+1.  [Embedded C MQTT Client 1.0.0]
+
+  [Embedded C MQTT Client 1.0.0]: https://github.com/eclipse/paho.mqtt.embedded-c/archive/v1.0.0.tar.gz
+  
+  
+2.  [mbed TLS 2.4.1]
+
+  [mbed TLS 2.4.1]: https://github.com/ARMmbed/mbedtls/archive/mbedtls-2.4.1.tar.gz
+  
+3.  [cJSON]
+
+  [cJSON]: https://github.com/DaveGamble/cJSON/archive/master.zip
+
+Note:
+If the dependencies were not able to be installed with the script on the device, manually pull the dependencies from the links mentioned above and follow the steps in the setup.sh file for making the necessary changes.
+
 Embedded C Client Library - Devices
 ===================================
 
-*iotfclient* is client for the IBM Watson Internet of Things
-Platform service.
-You can use this client to connect to the service, publish events and
-subscribe to commands.
+The *iotfclient* is client for the IBM Watson Internet of Things Platform service can be connected either as device client or gateway client. At the time of initialization, we need to specify, client is of type, device client or gateway client. We can use device client to connect to the service, publish events and subscribe to commands.
 
 Initialize
 ----------
@@ -53,57 +69,72 @@ There are 2 ways to initialize the *iotfclient*.
 
 ### Passing as parameters
 
-The function *initialize* takes the following details to connect to the
-IBM Watson Internet of Things Platform service
+The function *initialize* takes the following details to connect as device to the IBM Watson Internet of Things Platform service:
 
 -   client - Pointer to the *iotfclient*
 -   org - Your organization ID
 -   type - The type of your device
 -   id - The ID of your device
--   authmethod - Method of authentication (the only value currently
-    supported is “token”)
+-   authmethod - Method of authentication (the only value currently supported is “token”)
 -   authtoken - API key token (required if auth-method is “token”)
-
+-   serverCertPath= custom server certificate path if there is one otherwise leave blank
+-   useClientCertificates= 1 to use client certificates and 0 for not to use client certificates
+-   rootCACertPath= CA Certificate(s) path if useClientCertificates=1 otherwise leave blank
+-   clientCertPath= Client Certificate Path if useClientCertificates=1 otherwise leave blank
+-   clientKeyPath= Client Private Key Path if useClientCertificates=1 otherwise leave blank
+-   clientType = 0 for device client
 ``` {.sourceCode .c}
 #include "iotfclient.h"
    ....
    ....
-   Iotfclient client;
-   //quickstart
-   rc = initialize(&client,"quickstart","iotsample","001122334455",NULL,NULL);
-   //registered
-   rc = initialize(&client,"orgid","type","id","token","authtoken");
+   
+   iotfclient client;
+
+   if(!useCerts)
+	rc = initialize(&client,orgId,"internetofthings.ibmcloud.com",devType,            
+	                devId,"token",devToken,NULL,useCerts,NULL,NULL,NULL,0);
+   else
+	rc = initialize(&client,orgId,"internetofthings.ibmcloud.com",devType,
+			devId,"token",devToken,NULL,useCerts,rootCACertPath,clientCertPath,clientKeyPath,0);
    ....
 ```
 
 ### Using a configuration file
 
-The function *initialize\_configfile* takes the configuration file path
-as a parameter.
+The function *initialize\_configfile* takes pointer to *iotfclient*, the configuration file path and value 0 for device client as a parameters:
 
 ``` {.sourceCode .c}
 #include "iotfclient.h"
    ....
    ....
-   char *filePath = "./device.cfg";
-   Iotfclient client;
-   rc = initialize_configfile(&client, filePath);
+   char* configFilePath="./device.cfg";
+   iotfclient client;
+   
+   rc = initialize_configfile(&client, configFilePath,0);
+   free(configFilePath);
+
    ....
 ```
 
-The configuration file must be in the format of
+The configuration file must be in the below given format:
 
 ``` {.sourceCode .}
 org=$orgId
+domain=$domain
 type=$myDeviceType
 id=$myDeviceId
 auth-method=token
 auth-token=$token
+serverCertPath=$customServerCertificatePath
+useClientCertificates=0 or 1
+rootCACertPath=$rootCACertPath if useClientCertificates=1 otherwise leave blank
+clientCertPath=$clientCertPath if useClientCertificates=1 otherwise leave blank
+clientKeyPath=$clientKeyPath if useClientCertificates=1 otherwise leave blank
 ```
 
 ##### Return codes
 
-Following are the return codes in the *initialize* function
+Following are the return codes in the *initialize* function:
 
 * CONFIG_FILE_ERROR   -3
 * MISSING_INPUT_PARAM   -4
@@ -112,18 +143,18 @@ Following are the return codes in the *initialize* function
 Connect
 -------
 
-After initializing the *iotfclient*, you can connect to the IBM Watson Internet of Things
-Platform by calling the *connectiotf* function
+After initializing the *iotfclient*, we can connect to the IBM Watson Internet of Things Platform by calling the *connectiotf* function
 
 ``` {.sourceCode .c}
 #include "iotfclient.h"
    ....
    ....
-   Iotfclient client;
-   char *configFilePath = "./device.cfg";
+   char* configFilePath="./device.cfg";
+   iotfclient client;
 
-   rc = initialize_configfile(&client, configFilePath);
-
+   rc = initialize_configfile(&client, configFilePath,0);
+   free(configFilePath);
+			
    if(rc != SUCCESS){
        printf("initialize failed and returned rc = %d.\n Quitting..", rc);
        return 0;
@@ -140,7 +171,7 @@ Platform by calling the *connectiotf* function
 
 ##### Return Codes
 
-The IoTF *connectiotf* function return codes
+The IoTF *connectiotf* function return codes are as shown below:
 
 * MQTTCLIENT_SUCCESS   0
 * MQTTCLIENT_FAILURE   -1
@@ -153,10 +184,7 @@ The IoTF *connectiotf* function return codes
 Handling commands
 -----------------
 
-When the device client connects, it automatically subscribes to any
-command for this device. To process specific commands you need to
-register a command callback function by calling the function
-*setCommandHandler*. The commands are returned as
+When the device client connects in registered mode, to process specific commands, we need to subscribe to commands by calling the function *subscribeCommands* and then register a command callback function by calling the function *setCommandHandler*. The commands are returned as
 
 -   commandName - name of the command invoked
 -   format - e.g json, xml
@@ -164,21 +192,35 @@ register a command callback function by calling the function
 
 ``` {.sourceCode .c}
 #include "iotfclient.h"
+....
+....
 
 void myCallback (char* commandName, char* format, void* payload)
 {
-   printf("The command received :: %s\n", commandName);
-   printf("format : %s\n", format);
-   printf("Payload is : %s\n", (char *)payload);
+	printf("------------------------------------\n" );
+	printf("The command received :: %s\n", commandName);
+	printf("format : %s\n", format);
+	printf("Payload is : %s\n", (char *)payload);
+
+	printf("------------------------------------\n" );
 }
  ...
  ...
- char *filePath = "./device.cfg";
- rc = connectiotfConfig(filePath);
- setCommandHandler(myCallback);
-
- yield(1000);
+ char* configFilePath="./device.cfg";
+ iotfclient client;
  ....
+ 
+ rc = connectiotf(&client);
+
+ if(rc != SUCCESS){
+    printf("Connection failed and returned rc = %d.\n Quitting..", rc);
+    return 0;
+ }
+ subscribeCommands(&client);
+ setCommandHandler(&client, myCallback);
+ yield(&client,1000);
+ ....
+ 
 ```
 
 **Note** : *yield* function must be called periodically to receive commands.
@@ -186,7 +228,7 @@ void myCallback (char* commandName, char* format, void* payload)
 Publishing events
 ------------------
 
-Events can be published by using
+Events can be published by using the function publishEvent. The parameters to the function are:
 
 -   eventType - Type of event to be published e.g status, gps
 -   eventFormat - Format of the event e.g json
@@ -196,7 +238,7 @@ Events can be published by using
 ``` {.sourceCode .c}
 #include "iotfclient.h"
  ....
- rc = connectiotf (org, type, id , authmethod, authtoken);
+ rc = connectiotf (&client);
  char *payload = {\"d\" : {\"temp\" : 34 }};
 
  rc= publishEvent("status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0); 
@@ -206,7 +248,7 @@ Events can be published by using
 Disconnect Client
 ------------------
 
-Disconnects the client and releases the connections
+Disconnects the client, releases the connections and frees the memory.
 
 ``` {.sourceCode .c}
 #include "iotfclient.h"
@@ -216,7 +258,7 @@ Disconnects the client and releases the connections
 
  rc= publishEvent("status","json", payload , QOS0);
  ...
- rc = disconnect();
+ rc = disconnect(&client);
  ....
 ```
 
@@ -224,8 +266,7 @@ Disconnects the client and releases the connections
 Embedded C Client Library - Gateways
 =====================================
 
-*gatewayclient* is the gateway client for the IBM Watson Internet of Things Platform.
-You can use this client to connect to the platform, publish gateway events, publish device events on behalf of the devices, subscribe to both gateway and device commands. 
+The *iotfclient* also be used as the gateway client for the IBM Watson Internet of Things Platform. We can use gateway client to connect to the platform, publish gateway events, publish device events on behalf of the devices, subscribe to both gateway and device commands. 
 
 Initialize
 ----------
@@ -234,51 +275,50 @@ There are 2 ways to initialize the *gatewayclient*.
 
 ### Passing as parameters
 
-The function *initializeGateway* takes the following details to connect to the
-IBM Watson Internet of Things Platform service
+The function *initialize* takes the following details to connect as gateway client to the IBM Watson Internet of Things Platform service:
 
--   client - Pointer to the *gatewayclient*
+-   client - Pointer to the *iotfclient*
 -   org - Your organization ID
 -   type - The type of your gateway
 -   id - The ID of your gateway
 -   authmethod - Method of authentication (the only value currently
     supported is “token”)
 -   authtoken - Gateway authentication token (required if auth-method is “token”)
+-   serverCertPath= custom server certificate path if there is one otherwise leave blank
+-   useClientCertificates= 1 to use client certificates and 0 for not to use client certificates
+-   rootCACertPath= CA Certificate(s) path if useClientCertificates=1 otherwise leave blank
+-   clientCertPath= Client Certificate Path if useClientCertificates=1 otherwise leave blank
+-   clientKeyPath= Client Private Key Path if useClientCertificates=1 otherwise leave blank
+-   clientType = 1 for gateway client
 
 ``` {.sourceCode .c}
 #include "gatewayclient.h"
    ....
    ....
-   GatewayClient client;
-   rc = initializeGateway(&client, "org", "gatewayTyoe","gateway01" "token", "sdJh&usdhk#kjhsd");
-   if(rc != SUCCESS){
-    printf("initialize failed and returned rc = %d.\n Quitting..", rc);
-    return 0;
-  }
+   
+   iotfclient client;
 
-  rc = connectGateway(&client);
-   ....
+   if(!useCerts)
+	rc = initialize(&client,orgId,"internetofthings.ibmcloud.com",devType,            
+	                devId,"token",devToken,NULL,useCerts,NULL,NULL,NULL,1);
+   else
+	rc = initialize(&client,orgId,"internetofthings.ibmcloud.com",devType,
+			devId,"token",devToken,NULL,useCerts,rootCACertPath,clientCertPath,clientKeyPath,1);
 ```
 
 ### Using a configuration file
 
-The function *initializeGateway_configfile* takes the configuration file path
-as a parameter.
+The function *initialize_configfile* takes pointer to *iotfclient*, the configuration file path and client type as 1 for gateway client as parameters.
 
 ``` {.sourceCode .c}
 #include "gatewayclient.h"
    ....
    ....
-   GatewayClient client;
-   char *configFilePath = "./gateway.cfg";
-   rc = initializeGateway_configfile(&client, configFilePath);
+   char* configFilePath = "./gateway.cfg;
+   iotfclient client;
    
-   if(rc != SUCCESS){
-    printf("initialize failed and returned rc = %d.\n Quitting..", rc);
-    return 0;
-  }
-
-  rc = connectGateway(&client);
+   rc = initialize_configfile(&client, configFilePath,1);
+   
    ....
 ```
 
@@ -290,11 +330,16 @@ type=$myGatewayType
 id=$myGatewayId
 auth-method=token
 auth-token=$token
+serverCertPath=$customServerCertificatePath
+useClientCertificates=0 or 1
+rootCACertPath=$rootCACertPath if useClientCertificates=1 otherwise leave blank
+clientCertPath=$clientCertPath if useClientCertificates=1 otherwise leave blank
+clientKeyPath=$clientKeyPath if useClientCertificates=1 otherwise leave blank
 ```
 
 ##### Return codes
 
-Following are the return codes in the *initializeGateway* and *initializeGateway_configfile* function
+Following are the return codes in the *initialize* and *initialize_configfile* function for gateway client:
 
 * CONFIG_FILE_ERROR   -3
 * MISSING_INPUT_PARAM   -4
@@ -304,23 +349,25 @@ Following are the return codes in the *initializeGateway* and *initializeGateway
 Connect
 -------
 
-After initializing the *gatewayclient*, you can connect to IBM Watson Internet of
-Things Platform by calling the *connectGateway* function
+After initializing the *gatewayclient*, we can connect to IBM Watson Internet of Things Platform by calling the *connectiotf* function:
 
 ``` {.sourceCode .c}
 #include "gatewayclient.h"
-   ....
-   ....
-   char *configFilePath = "./gateway.cfg";
-
-  rc = initializeGateway_configfile(&client, configFilePath);
+  ....
+  ....
+  char* configFilePath="gateway.cfg";
+  iotfclient client;
+  
+  .....
+  
+  rc = initialize_configfile(&client, configFilePath,1);
 
   if(rc != SUCCESS){
     printf("initialize failed and returned rc = %d.\n Quitting..", rc);
     return 0;
   }
 
-  rc = connectGateway(&client);
+  rc = connectiotf(&client);
 
   if(rc != SUCCESS){
     printf("Connection failed and returned rc = %d.\n Quitting..", rc);
@@ -331,7 +378,7 @@ Things Platform by calling the *connectGateway* function
 
 ##### Return Codes
 
-The IoTF *connectiotf* function return codes
+The IoTF *connectiotf* function return codes:
 
 * MQTTCLIENT_SUCCESS   0
 * MQTTCLIENT_FAILURE   -1
@@ -344,40 +391,41 @@ The IoTF *connectiotf* function return codes
 Handling commands
 -----------------
 
-When the gateway client connects, it automatically subscribes to all
-commands for this gateway. 
-For subscribing for device commands you need to use *subscribeToDeviceCommands*. You need to provide the device Type , deivce Id, command name, the command format and QOS.
+When the gateway client connects, it will not automatically subscribes to commands for the gateway and devices. We need to subscribe ourselves using the functions -  *subscribeToDeviceCommands* and *subscribeToGatewayCommands*.
+For subscribing for device commands we need to use *subscribeToDeviceCommands*. We need to provide the device Type , deivce Id, command name, the command format and QOS.
 
 ``` {.sourceCode .c}
 #include "gatewayclient.h"
-   ....
-   ....
-   char *configFilePath = "./gateway.cfg";
-
-  rc = initializeGateway_configfile(&client, configFilePath);
+  ....
+  ....
+  char* configFilePath="./gateway.cfg";
+  iotfclient client;
+  
+  .....
+  
+  rc = initialize_configfile(&client, configFilePath,1);
 
   if(rc != SUCCESS){
     printf("initialize failed and returned rc = %d.\n Quitting..", rc);
     return 0;
   }
 
-  rc = connectGateway(&client);
+  rc = connectiotf(&client);
 
   if(rc != SUCCESS){
     printf("Connection failed and returned rc = %d.\n Quitting..", rc);
     return 0;
   }
-  
-  setGatewayCommandHandler(&client, myCallback);
-  // providing "+" will subscribe to all the command of all formats.
-  subscribeToDeviceCommands(&client, "pitype", "pi2", "+", "+", 0);
    ....
+  // providing "+" will subscribe to all the command of all formats.
+  subscribeToDeviceCommands(&client, "elevator", "elevator-1", "+", "+", 0);
+  ....
 ```
 
 ##### Process Commands
 
-To process specific commands you need to register a command callback function by calling the function
-*setGatewayCommandHandler*. The commands are returned as
+To process specific commands we need to register a command callback function by calling the function
+*setGatewayCommandHandler*. The commands are returned in the below format:
 
 -   type - Type of the Gateway/Device
 -   id - ID of the Gateway/Device
@@ -388,49 +436,58 @@ To process specific commands you need to register a command callback function by
 
 ``` {.sourceCode .c}
 #include "gatewayclient.h"
+......
 
+//Command Handler
 void myCallback (char* type, char* id, char* commandName, char *format, void* payload, size_t payloadlen)
 {
-  printf("------------------------------------\n" );
-  printf("Type is : %s\n", type);
-  printf("Id is : %s\n", id);
-  printf("The command received :: %s\n", commandName);
-  printf("format : %s\n", format);
-  printf("Payload is : %.*s\n", (int)payloadlen, (char *)payload);
-  printf("------------------------------------\n" );
+	printf("------------------------------------\n" );
+	printf("Type is : %s\n", type);
+	printf("Id is : %s\n", id);
+	printf("The command received :: %s\n", commandName);
+	printf("format : %s\n", format);
+	printf("Payload is : %.*s\n", (int)payloadlen, (char *)payload);
+	printf("------------------------------------\n" );
 }
- ...
- ...
-    char *configFilePath = "./gateway.cfg";
-
-  rc = initializeGateway_configfile(&client, configFilePath);
+  ....
+  ....
+  char* configFilePath="./gateway.cfg";
+  iotfclient client;
+  
+  .....
+  
+  rc = initialize_configfile(&client, configFilePath,1);
 
   if(rc != SUCCESS){
     printf("initialize failed and returned rc = %d.\n Quitting..", rc);
     return 0;
   }
 
-  rc = connectGateway(&client);
+  rc = connectiotf(&client);
 
   if(rc != SUCCESS){
     printf("Connection failed and returned rc = %d.\n Quitting..", rc);
     return 0;
   }
-
-  setGatewayCommandHandler(&client, myCallback);
+   ....
   // providing "+" will subscribe to all the command of all formats.
-  subscribeToDeviceCommands(&client, "raspi", "pi2", "+", "+", 0);
-
-    gatewayYield(1000);
- ....
+  subscribeToDeviceCommands(&client, "elevator", "elevator-1", "+", "+", 0);
+  
+  //Registering the function "myCallback" as the command handler.
+  setGatewayCommandHandler(&client, myCallback);
+  
+  //Yield for receiving commands.
+  yield(&client, 1000);
+  
+  ....
+  
 ```
 
-**Note** : *gatewayYield* function must be called periodically to receive commands.
+**Note** : *yield* function must be called periodically to receive commands.
 
 Publishing events
 ------------------
-A gateway can publish events from itself and on behalf of any device connected via the gateway. 
-Events can be published by using
+A gateway can publish events from itself and on behalf of any device connected via the gateway. Events can be published by using the functions publishGatewayEvents and publishDeviceEvents with the below parameters:
 -   eventType - Type of event to be published e.g status, gps
 -   eventFormat - Format of the event e.g json
 -   data - Payload of the event
@@ -439,44 +496,46 @@ Events can be published by using
 ##### Publish Gateway Events
     
 ``` {.sourceCode .c}
-    rc = connectGateway(&client);
-
-  if(rc != SUCCESS){
-    printf("Connection failed and returned rc = %d.\n Quitting..", rc);
-    return 0;
-  }
-  rc= publishGatewayEvent(&client, "raspi","device02","status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
+.....
+    //publishing gateway events
+    rc= publishGatewayEvent(&client, "elevatorDevices","elevatorGateway", "{\"d\" : {\"temp\" : 34 }}", QOS0);
+		
  ....
 ```
 
 ##### Publish Device Events on behalf of a device
     
 ``` {.sourceCode .c}
-    rc = connectGateway(&client);
-
-  if(rc != SUCCESS){
-    printf("Connection failed and returned rc = %d.\n Quitting..", rc);
-    return 0;
-  }
-  rc= publishDeviceEvent(&client, "raspi","device02","status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
+   //publishing device events on behalf of a device
+   rc= publishDeviceEvent(&client, "elevator","elevator-1","status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
  ....
 ```
 
 Disconnect Client
 ------------------
 
-Disconnects the client and releases the connections
+Disconnects the client, releases the connections and frees the memory
 
 ``` {.sourceCode .c}
-    rc = connectGateway(&client);
-
-  if(rc != SUCCESS){
-    printf("Connection failed and returned rc = %d.\n Quitting..", rc);
-    return 0;
-  }
-  rc= publishDeviceEvent(&client, "raspi","device02","status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
-  disconnectGateway(&client);
+    //Be sure to disconnect the gateway at exit
+    disconnectGateway(&client);
 ```
+
+Running the Device and Gateway Samples
+--------------------------------------
+There are couple of sample programs available in the samples directory under `$IOT_EMBDC_HOME` directory. Before running them, update the configuration files as described in the above sections.
+
+Run helloWorld sample being in the path `$IOT_EMBDC_HOME/build`: 
+
+       ./samples/helloWorld orgID deviceType deviceId token useCerts caCertsPath clientCertPath clientKeyPath
+       
+Run Device Sample being in the path `$IOT_EMBDC_HOME/build`: 
+
+	./samples/sampleDevice
+Run Gateway Sample being in the path `$IOT_EMBDC_HOME/build`: 
+
+	./samples/sampleGateway
+	
 
 ======================================
 Embedded C Library - Managed Device
@@ -485,7 +544,7 @@ Embedded C Library - Managed Device
 Introduction
 -------------
 
-This client library describes how to use devices with the Embedded C WIoTP client library.
+This Embedded C Library describes how to use devices and gateways with the Embedded C WIoTP client library.
 
 This section contains information on how devices can connect to the Internet of Things Platform Device Management service using c and perform device management operations like  location update, add logs and diagnostics update.
 
@@ -493,7 +552,7 @@ This section contains information on how devices can connect to the Internet of 
 
 Device Management
 -------------------------------------------------------------------------------
-The device management <a href="https://docs.internetofthings.ibmcloud.com/devices/device_mgmt/index.html">device management</a> feature enhances the IBM Watson Internet of Things Platform service with new capabilities for managing devices. Device management makes a distinction between managed and unmanaged devices:
+The <a href="https://docs.internetofthings.ibmcloud.com/devices/device_mgmt/index.html">device management</a> feature enhances the IBM Watson Internet of Things Platform service with new capabilities for managing devices. Device management makes a distinction between managed and unmanaged devices:
 
 * **Managed Devices** are defined as devices which have a management agent installed. The management agent sends and receives device metadata and responds to device management commands from the IBM Watson Internet of Things Platform.
 * **Unmanaged Devices** are any devices which do not have a device management agent. All devices begin their lifecycle as unmanaged devices, and can transition to managed devices by sending a message from a device management agent to the IBM Watson Internet of Things Platform.
@@ -519,22 +578,27 @@ IBM Watson Internet of Things Platform service
 -   authmethod - Method of authentication (the only value currently
     supported is “token”)
 -   authtoken - API key token (required if auth-method is “token”)
+-   serverCertPath= custom server certificate path if there is one otherwise leave blank
+-   useClientCertificates= 1 to use client certificates and 0 for not to use client certificates
+-   rootCACertPath= CA Certificate(s) path if useClientCertificates=1 otherwise leave blank
+-   clientCertPath= Client Certificate Path if useClientCertificates=1 otherwise leave blank
+-   clientKeyPath= Client Private Key Path if useClientCertificates=1 otherwise leave blank
 
 ``` {.sourceCode .c}
 #include "devicemanagementclient.h"
    ....
    ....
    //quickstart
-   rc = initialize_dm("quickstart","iotsample","001122334455",NULL,NULL);
+   rc = initialize_dm("quickstart",NULL,"iotsample","001122334455",NULL,NULL,NULL,0,NULL,NULL,NULL);
    //registered
-   rc = initialize_dm("orgid","type","id","token","authtoken");
+   rc = initialize_dm("orgid","domain","type","id","token","authtoken",NULL,1,"rootCACertPath",
+                      "ClientSertPath","ClientKeyPath");
    ....
 ```
 
 ### Using a configuration file
 
-The function *initialize\_configfile* takes the configuration file path
-as a parameter.
+The function *initialize\_configfile\_dm* takes the configuration file path as a parameter.
 
 ``` {.sourceCode .c}
 #include "devicemanagementclient.h"
@@ -553,6 +617,11 @@ type=$myDeviceType
 id=$myDeviceId
 auth-method=token
 auth-token=$token
+serverCertPath=$customServerCertificatePath
+useClientCertificates=0 or 1
+rootCACertPath=$rootCACertPath if useClientCertificates=1 otherwise leave blank
+clientCertPath=$clientCertPath if useClientCertificates=1 otherwise leave blank
+clientKeyPath=$clientKeyPath if useClientCertificates=1 otherwise leave blank
 ```
 
 ##### Return codes
@@ -919,4 +988,3 @@ Disconnects the client and releases the connections
 ```
 As shown, this function accepts following parameter,
 * *ManagedDevice struct Instance* which has all the device info filled
-
