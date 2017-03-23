@@ -49,8 +49,6 @@
 #include "mbedtls/error.h"
 #include "mbedtls/certs.h"
 
-//Include header file for iot util functions
-//#include "iotf_utils.h"
 
 //Wrapper for printf function
 #define mbedtls_printf printf

@@ -17,7 +17,6 @@
  *******************************************************************************/
 
 #include "gatewayclient.h"
-#include "iotf_utils.h"
 
 //Command Callback
 commandCallback cb;

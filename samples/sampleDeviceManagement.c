@@ -16,7 +16,6 @@
  *******************************************************************************/
 
 #include "devicemanagementclient.h"
-#include "iotf_utils.h"
 
 void myCallback (char* commandName, char* format, void* payload)
 {

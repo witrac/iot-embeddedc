@@ -4,7 +4,6 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include "gatewayclient.h"
-#include "iotf_utils.h"
 
 //iotfclient  gatewayClient;
 

@@ -4,7 +4,6 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include "iotfclient.h"
-#include "iotf_utils.h"
 
 char *devCfgPath;
 Config deviceconfig;
@@ -39,7 +38,7 @@ void testInitialize(){
 
 	//Successful Initialization
         assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,"ServerCertPath",1,"RootCACertPath","ClientCertPath","ClientKeyPath",0),SUCCESS);
-	
+
 }
 
 void testInitializeConfigfile(){

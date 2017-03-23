@@ -34,7 +34,7 @@ Install the Dependencies and Build the library
 The setsup.sh script installs listed dependencies under Dependencies Section and it copies the dependencies into the lib directory after making necessary changes.
 
 3. Create directory build within $IOT_EMBDC_HOME Path: `mkdir $IOT_EMBDC_HOME/build`
-4. Change to $IOT_EMBDC_HOME/build direcotyr to build the library: `cd $IOT_EMBDC_HOME/build`
+4. Change to $IOT_EMBDC_HOME/build directory to build the library: `cd $IOT_EMBDC_HOME/build`
 5. Run CMake to collect all required build details and to create Makefile: `cmake ..`
 6. Run make to build the library, samples and tests: `make`
 
@@ -44,12 +44,12 @@ Dependencies
 1.  [Embedded C MQTT Client 1.0.0]
 
   [Embedded C MQTT Client 1.0.0]: https://github.com/eclipse/paho.mqtt.embedded-c/archive/v1.0.0.tar.gz
-  
-  
+
+
 2.  [mbed TLS 2.4.1]
 
   [mbed TLS 2.4.1]: https://github.com/ARMmbed/mbedtls/archive/mbedtls-2.4.1.tar.gz
-  
+
 3.  [cJSON]
 
   [cJSON]: https://github.com/DaveGamble/cJSON/archive/master.zip
@@ -87,7 +87,7 @@ The function *initialize* takes the following details to connect as device to th
 #include "iotfclient.h"
    ....
    ....
-   
+
    iotfclient client;
 
    if(!useCerts)
@@ -109,7 +109,7 @@ The function *initialize\_configfile* takes pointer to *iotfclient*, the configu
    ....
    char* configFilePath="./device.cfg";
    iotfclient client;
-   
+
    rc = initialize_configfile(&client, configFilePath,0);
    free(configFilePath);
 
@@ -154,7 +154,7 @@ After initializing the *iotfclient*, we can connect to the IBM Watson Internet o
 
    rc = initialize_configfile(&client, configFilePath,0);
    free(configFilePath);
-			
+
    if(rc != SUCCESS){
        printf("initialize failed and returned rc = %d.\n Quitting..", rc);
        return 0;
@@ -209,7 +209,7 @@ void myCallback (char* commandName, char* format, void* payload)
  char* configFilePath="./device.cfg";
  iotfclient client;
  ....
- 
+
  rc = connectiotf(&client);
 
  if(rc != SUCCESS){
@@ -220,7 +220,7 @@ void myCallback (char* commandName, char* format, void* payload)
  setCommandHandler(&client, myCallback);
  yield(&client,1000);
  ....
- 
+
 ```
 
 **Note** : *yield* function must be called periodically to receive commands.
@@ -241,7 +241,7 @@ Events can be published by using the function publishEvent. The parameters to th
  rc = connectiotf (&client);
  char *payload = {\"d\" : {\"temp\" : 34 }};
 
- rc= publishEvent("status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0); 
+ rc= publishEvent("status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
  ....
 ```
 
@@ -266,7 +266,7 @@ Disconnects the client, releases the connections and frees the memory.
 Embedded C Client Library - Gateways
 =====================================
 
-The *iotfclient* also be used as the gateway client for the IBM Watson Internet of Things Platform. We can use gateway client to connect to the platform, publish gateway events, publish device events on behalf of the devices, subscribe to both gateway and device commands. 
+The *iotfclient* also be used as the gateway client for the IBM Watson Internet of Things Platform. We can use gateway client to connect to the platform, publish gateway events, publish device events on behalf of the devices, subscribe to both gateway and device commands.
 
 Initialize
 ----------
@@ -295,7 +295,7 @@ The function *initialize* takes the following details to connect as gateway clie
 #include "gatewayclient.h"
    ....
    ....
-   
+
    iotfclient client;
 
    if(!useCerts)
@@ -316,9 +316,9 @@ The function *initialize_configfile* takes pointer to *iotfclient*, the configur
    ....
    char* configFilePath = "./gateway.cfg;
    iotfclient client;
-   
+
    rc = initialize_configfile(&client, configFilePath,1);
-   
+
    ....
 ```
 
@@ -343,7 +343,7 @@ Following are the return codes in the *initialize* and *initialize_configfile* f
 
 * CONFIG_FILE_ERROR   -3
 * MISSING_INPUT_PARAM   -4
-* QUICKSTART_NOT_SUPPORTED  -5 
+* QUICKSTART_NOT_SUPPORTED  -5
 
 
 Connect
@@ -357,9 +357,9 @@ After initializing the *gatewayclient*, we can connect to IBM Watson Internet of
   ....
   char* configFilePath="gateway.cfg";
   iotfclient client;
-  
+
   .....
-  
+
   rc = initialize_configfile(&client, configFilePath,1);
 
   if(rc != SUCCESS){
@@ -400,9 +400,9 @@ For subscribing for device commands we need to use *subscribeToDeviceCommands*. 
   ....
   char* configFilePath="./gateway.cfg";
   iotfclient client;
-  
+
   .....
-  
+
   rc = initialize_configfile(&client, configFilePath,1);
 
   if(rc != SUCCESS){
@@ -453,9 +453,9 @@ void myCallback (char* type, char* id, char* commandName, char *format, void* pa
   ....
   char* configFilePath="./gateway.cfg";
   iotfclient client;
-  
+
   .....
-  
+
   rc = initialize_configfile(&client, configFilePath,1);
 
   if(rc != SUCCESS){
@@ -472,15 +472,15 @@ void myCallback (char* type, char* id, char* commandName, char *format, void* pa
    ....
   // providing "+" will subscribe to all the command of all formats.
   subscribeToDeviceCommands(&client, "elevator", "elevator-1", "+", "+", 0);
-  
+
   //Registering the function "myCallback" as the command handler.
   setGatewayCommandHandler(&client, myCallback);
-  
+
   //Yield for receiving commands.
   yield(&client, 1000);
-  
+
   ....
-  
+
 ```
 
 **Note** : *yield* function must be called periodically to receive commands.
@@ -494,17 +494,17 @@ A gateway can publish events from itself and on behalf of any device connected v
 -   QoS - qos for the publish event. Supported values : QOS0, QOS1, QOS2
 
 ##### Publish Gateway Events
-    
+
 ``` {.sourceCode .c}
 .....
     //publishing gateway events
     rc= publishGatewayEvent(&client, "elevatorDevices","elevatorGateway", "{\"d\" : {\"temp\" : 34 }}", QOS0);
-		
+
  ....
 ```
 
 ##### Publish Device Events on behalf of a device
-    
+
 ``` {.sourceCode .c}
    //publishing device events on behalf of a device
    rc= publishDeviceEvent(&client, "elevator","elevator-1","status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
@@ -525,17 +525,17 @@ Running the Device and Gateway Samples
 --------------------------------------
 There are couple of sample programs available in the samples directory under `$IOT_EMBDC_HOME` directory. Before running them, update the configuration files as described in the above sections.
 
-Run helloWorld sample being in the path `$IOT_EMBDC_HOME/build`: 
+Run helloWorld sample being in the path `$IOT_EMBDC_HOME/build`:
 
        ./samples/helloWorld orgID deviceType deviceId token useCerts caCertsPath clientCertPath clientKeyPath
-       
-Run Device Sample being in the path `$IOT_EMBDC_HOME/build`: 
+
+Run Device Sample being in the path `$IOT_EMBDC_HOME/build`:
 
 	./samples/sampleDevice
-Run Gateway Sample being in the path `$IOT_EMBDC_HOME/build`: 
+Run Gateway Sample being in the path `$IOT_EMBDC_HOME/build`:
 
 	./samples/sampleGateway
-	
+
 
 ======================================
 Embedded C Library - Managed Device
@@ -899,7 +899,7 @@ If an error occurs during Firmware Download the state should be set to IDLE and 
     CONNECTION_LOST
     INVALID_URI
 
-Device can check the integrity of the downloaded firmware image using the verifier and report the status back to IBM Watson Internet of Things Platform. The verifier can be set by the device during the startup or as part of the Download Firmware request by the application. 
+Device can check the integrity of the downloaded firmware image using the verifier and report the status back to IBM Watson Internet of Things Platform. The verifier can be set by the device during the startup or as part of the Download Firmware request by the application.
 
 3.2 Sample implementation of updateFirmware
 
@@ -935,11 +935,11 @@ void setFactoryResetHandler(commandCallback resetHandler);
 
 2.1 Sample implementation of handleReboot
 
-The implementation must add a logic to reboot the device and report the status of the reboot. Upon receiving the request, the device first needs to inform the server about the support(or failure) before proceeding with the actual reboot. And if the device can not reboot the device or any other error during the reboot, the device can update the status along with an optional message. 
+The implementation must add a logic to reboot the device and report the status of the reboot. Upon receiving the request, the device first needs to inform the server about the support(or failure) before proceeding with the actual reboot. And if the device can not reboot the device or any other error during the reboot, the device can update the status along with an optional message.
 
 2.2 Sample implementation of handleFactoryReset
 
-The implementation must add a logic to reset the device to factory settings and report the status of the factory reset. Upon receiving the request, the device first needs to inform the server about the support(or failure) before proceeding with the actual reset. And if the sample can not reset the device or any other error during the reset, the device can update the status along with an optional message. 
+The implementation must add a logic to reset the device to factory settings and report the status of the factory reset. Upon receiving the request, the device first needs to inform the server about the support(or failure) before proceeding with the actual reset. And if the sample can not reset the device or any other error during the reset, the device can update the status along with an optional message.
 
 Refer to <a href="https://docs.internetofthings.ibmcloud.com/devices/device_mgmt/requests.html#/firmware-actions#firmware-actions" >this page</a> for more information about the Device Action.
 

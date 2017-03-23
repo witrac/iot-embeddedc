@@ -16,7 +16,6 @@
  *******************************************************************************/
 
 #include "gatewayclient.h"
-#include "iotf_utils.h"
 
 volatile int interrupt = 0;
 

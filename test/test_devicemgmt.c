@@ -10,7 +10,6 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include "devicemanagementclient.h"
-#include "iotf_utils.h"
 
 //Iotfclient *pclient;
 void populateMgmtConfig();

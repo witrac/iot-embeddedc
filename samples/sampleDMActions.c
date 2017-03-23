@@ -16,7 +16,6 @@
  *******************************************************************************/
 
 #include "devicemanagementclient.h"
-#include "iotf_utils.h"
 
 volatile int interruption = 0;
 
