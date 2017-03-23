@@ -12,11 +12,11 @@
  *
  * Contributors:
  *    Jeffrey Dare - initial implementation and API implementation
+ *    Lokesh Haralakatta - Added required changes to use Client Side certificates
  *******************************************************************************/
 
-#include <stdio.h>
-#include <signal.h>
 #include "gatewayclient.h"
+#include "iotf_utils.h"
 
 volatile int interrupt = 0;
 
@@ -42,15 +42,24 @@ int main(int argc, char const *argv[])
 {
 	int rc = -1;
 
-	GatewayClient client;
+	iotfclient  client;
 
 	//catch interrupt signal
 	signal(SIGINT, sigHandler);
 	signal(SIGTERM, sigHandler);
 
-	char *configFilePath = "./gateway.cfg";
+	char *configFilePath = NULL;
 
-	rc = initializeGateway_configfile(&client, configFilePath);
+	if(isEMBDCHomeDefined()){
+
+	    getSamplesPath(&configFilePath);
+	    strcat(configFilePath,"/device.cfg");
+        }
+	else
+	    strCopy(&configFilePath,"./device.cfg");
+
+	rc = initialize_configfile(&client, configFilePath,1);
+	free(configFilePath);
 
 	if(rc != SUCCESS){
 		printf("initialize failed and returned rc = %d.\n Quitting..", rc);
@@ -59,7 +68,7 @@ int main(int argc, char const *argv[])
 
 	setKeepAliveInterval(59);
 
-	rc = connectGateway(&client);
+	rc = connectiotf(&client);
 
 	if(rc != SUCCESS){
 		printf("Connection failed and returned rc = %d.\n Quitting..", rc);
@@ -69,19 +78,19 @@ int main(int argc, char const *argv[])
 	//Registering the function "myCallback" as the command handler.
 	setGatewayCommandHandler(&client, myCallback);
 	// providing "+" will subscribe to all the command of all formats.
-	subscribeToDeviceCommands(&client, "raspi", "pi2", "+", "+", 0);
+	subscribeToDeviceCommands(&client, "elevator", "elevator-1", "+", "+", 0);
 
-	while(!interrupt) 
+	while(!interrupt)
 	{
 		printf("Publishing the event stat with rc ");
 		//publishing gateway events
-		rc= publishGatewayEvent(&client, "status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
+		rc= publishGatewayEvent(&client, "elevatorDevices","elevatorGateway", "{\"d\" : {\"temp\" : 34 }}", QOS0);
 		//publishing device events on behalf of a device
-		rc= publishDeviceEvent(&client, "raspi","device02","status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
-		
+		rc= publishDeviceEvent(&client, "elevator","elevator-1","status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
+
 		printf(" %d\n", rc);
 		//Yield for receiving commands.
-		gatewayYield(&client, 1000);
+		yield(&client, 1000);
 		sleep(1);
 	}
 

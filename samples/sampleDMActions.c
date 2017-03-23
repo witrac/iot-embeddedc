@@ -12,13 +12,11 @@
  *
  * Contributors:
  *    HariPrasada Reddy P - initial implementation and API implementation
+ *    Lokesh Haralakatta - Added required changes to use Client Side certificates
  *******************************************************************************/
 
-#include <stdio.h>
-#include <signal.h>
-//#include "iotfclient.h"
 #include "devicemanagementclient.h"
-#include <time.h>
+#include "iotf_utils.h"
 
 volatile int interruption = 0;
 
@@ -102,9 +100,18 @@ int main(int argc, char const *argv[])
 	signal(SIGINT, signalHandler);
 	signal(SIGTERM, signalHandler);
 
-	char *configFilePath = "./device.cfg";
+	char *configFilePath;
+
+	if(isEMBDCHomeDefined()){
+
+	    getSamplesPath(&configFilePath);
+	    strcat(configFilePath,"/device.cfg");
+        }
+	else
+	    strCopy(&configFilePath,"./device.cfg");
 
 	rc = initialize_configfile_dm(configFilePath);
+	free(configFilePath);
 
 	if(rc != SUCCESS){
 		printf("initialize failed and returned rc = %d.\n Quitting..", rc);

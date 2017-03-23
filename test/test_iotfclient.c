@@ -3,146 +3,121 @@
 #include <stddef.h>
 #include <setjmp.h>
 #include <cmocka.h>
-#include <malloc.h>
 #include "iotfclient.h"
-#include "testUtils.c"
+#include "iotf_utils.h"
 
-Iotfclient *pclient;
-
-struct config deviceconfig;
+char *devCfgPath;
+Config deviceconfig;
 
 void testInitialize(){
-	Iotfclient client;
+	iotfclient  client;
 
-	char devCfgPath[1024];
-	getDeviceCfgFilePath(devCfgPath);
-
+	getTestCfgFilePath(&devCfgPath,"device.cfg");
 	get_config(devCfgPath, &deviceconfig);
+	free(devCfgPath);
 
-	//int initialize(Iotfclient *client, char *orgId, deviceconfig.domain, char *deviceType, char *deviceId, char *authmethod, char *authToken)
-    //orgID , deviceType and deviceId cannot be NULL
-	assert_int_equal(initialize(&client, NULL, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),MISSING_INPUT_PARAM);
-	assert_int_equal(initialize(&client, deviceconfig.org, NULL, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),SUCCESS);
-	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, NULL, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),MISSING_INPUT_PARAM);
-	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, NULL, deviceconfig.authmethod, deviceconfig.authtoken),MISSING_INPUT_PARAM);
+        //orgID , deviceType and deviceId cannot be NULL
+	assert_int_equal(initialize(&client, NULL, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,NULL,0,NULL,NULL,NULL,0),MISSING_INPUT_PARAM);
+	assert_int_equal(initialize(&client, deviceconfig.org, NULL, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,NULL,0,NULL,NULL,NULL,0),SUCCESS);
+	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, NULL, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,NULL,0,NULL,NULL,NULL,0),MISSING_INPUT_PARAM);
+	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, NULL, deviceconfig.authmethod, deviceconfig.authtoken,NULL,0,NULL,NULL,NULL,0),MISSING_INPUT_PARAM);
 
 	//In registered mode, authmethod and authtoken cannot be NULL
-	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, NULL, deviceconfig.authtoken),MISSING_INPUT_PARAM);
-	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, NULL),MISSING_INPUT_PARAM);
+	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, NULL, deviceconfig.authtoken,NULL,0,NULL,NULL,NULL,0),MISSING_INPUT_PARAM);
+	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod,NULL,NULL,0,NULL,NULL, NULL,0),MISSING_INPUT_PARAM);
 
 	//In quickstart mode, authmethod and authtoken can be NULL
-    assert_int_equal(initialize(&client, "quickstart", deviceconfig.domain, deviceconfig.type, deviceconfig.id, NULL, NULL),SUCCESS);
+        assert_int_equal(initialize(&client, "quickstart", deviceconfig.domain, deviceconfig.type, deviceconfig.id, NULL, NULL,NULL,0,NULL,NULL,NULL,0),SUCCESS);
+
+	//RootCACertPath,ClientCertPath and ClientKeyPath can not be NULL when useClientCertificates parameter is 1
+	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,NULL,1,NULL,"ClientCertPath","ClientKeyPath",0),MISSING_INPUT_PARAM);
+	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,NULL,1,"RootCACertPath",NULL,"ClientKeyPath",0),MISSING_INPUT_PARAM);
+	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,NULL,1,"RootCACertPath","ClientCertPath",NULL,0),MISSING_INPUT_PARAM);
+
+	//Server certificate Path can be NULL
+	assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,NULL,0,NULL,NULL,NULL,0),SUCCESS);
 
 	//Successful Initialization
-    assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),SUCCESS);
+        assert_int_equal(initialize(&client, deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,"ServerCertPath",1,"RootCACertPath","ClientCertPath","ClientKeyPath",0),SUCCESS);
+	
 }
 
 void testInitializeConfigfile(){
-	Iotfclient client;
-	char devCfgPath[256];
-	getDeviceCfgFilePath(devCfgPath);
+	iotfclient  client;
 
 	//Invalid Config File
-	assert_int_not_equal(initialize_configfile(&client,"dummyConfig.cfg"),SUCCESS);
+	assert_int_equal(initialize_configfile(&client,"dummyConfig.cfg",0),CONFIG_FILE_ERROR);
 
 	//Config File with null values
-	//assert_int_equal(initialize_configfile(&client,nullCfgPath),CONFIG_FILE_ERROR);
+	getTestCfgFilePath(&devCfgPath,"null_values.cfg");
+	assert_int_equal(initialize_configfile(&client,devCfgPath,0),MISSING_INPUT_PARAM);
+	free(devCfgPath);
 
-	//Valid Config File with null values
-    assert_int_equal(initialize_configfile(&client,devCfgPath),SUCCESS);
+	//Valid Config File
+	getTestCfgFilePath(&devCfgPath,"device.cfg");
+        assert_int_equal(initialize_configfile(&client,devCfgPath,0),SUCCESS);
+	free(devCfgPath);
 }
 
-void testConnectIotf(){
-	Iotfclient client;
-	char devCfgPath[256];
-	getDeviceCfgFilePath(devCfgPath);
-
-	//Client is not connected yet
-	assert_int_not_equal(isConnected(&client),1);
-
-	//Connect in registered mode
-	assert_int_equal(initialize_configfile(&client,devCfgPath),SUCCESS);
-	assert_int_equal(connectiotf(&client),0);
-
-	//Client is connected
-	assert_int_equal(isConnected(&client),1);
+void testConnectIotfAndPublishInQSMode(){
+	iotfclient  client;
 
 	//Connect in quickstart mode
-	struct config devconfig = {"", "internetofthings.ibmcloud.com", "", "", "", ""};
-	get_config(devCfgPath, &devconfig);	
-	assert_int_equal(initialize(&client, "quickstart", devconfig.domain, devconfig.type, devconfig.id, NULL, NULL),SUCCESS);
+	getTestCfgFilePath(&devCfgPath,"device.cfg");
+	get_config(devCfgPath, &deviceconfig);
+	assert_int_equal(initialize(&client, "quickstart", deviceconfig.domain, deviceconfig.type,
+	                 deviceconfig.id, NULL, NULL,NULL,0,NULL,NULL,NULL,0),SUCCESS);
 	assert_int_equal(connectiotf(&client),0);
 
-	//Client is connected
+	//Client is connected now in quickstart mode
 	assert_int_equal(isConnected(&client),1);
 
 	//Disconnect the client
-	disconnect(&client);
+	assert_int_equal(disconnect(&client),0);
 }
 
-static int setup(){
-	int rc=-1;
-	pclient = (Iotfclient*)malloc(sizeof(Iotfclient));
-	char devCfgPath[1024];
-	getDeviceCfgFilePath(devCfgPath);
-	rc = initialize_configfile(pclient,devCfgPath);
-	rc = connectiotf(pclient);
+void testConnectIotfAndPublishWithoutCerts(){
+	iotfclient  client;
 
-	return rc;
+	//Get config details with SSL
+	getTestCfgFilePath(&devCfgPath,"device.cfg");
+
+	//Connecting in registered mode without Client Side Certificates, should succeed
+	assert_int_equal(initialize_configfile(&client,devCfgPath,0),SUCCESS);
+	assert_int_equal(connectiotf(&client),0);
+
+	//Client is connected now without certificates
+	assert_int_equal(isConnected(&client),1);
+
+	//Disconnect the client
+	assert_int_equal(disconnect(&client),0);
+	free(devCfgPath);
+
 }
 
-static int teardown(){
-	int rc=-1;
-    rc=disconnect(pclient);
-	return rc;
-}
+void testConnectIotfAndPublishWithCerts(){
+	iotfclient  client;
 
-void testPublishEvent(){
-	unsigned char *payload = "{ \"d\" : { \"temp\" : 34 }}";
+	//Get config details with Client Side Certificates
+	getTestCfgFilePath(&devCfgPath,"device_with_csc.cfg");
+
+	//Client is not connected yet
+	assert_int_equal(isConnected(&client),0);
+
+	//Connecting in registered mode using Client Side Certificates should succeed
+	assert_int_equal(initialize_configfile(&client,devCfgPath,0),SUCCESS);
+	assert_int_equal(connectiotf(&client),0);
+
+	//Client is connected now using Client Side Certificates
+	assert_int_equal(isConnected(&client),1);
 
 	//Publish an event
-	assert_int_equal(publishEvent(pclient,"status","json", payload , QOS0),0);
-}
+	assert_int_equal(publishEvent(&client,"status","json", "{\"d\" : {\"temp\" : 34 }}" , QOS0),0);
 
-void myCallback (char* commandName, char* format, void* payload)
-{
-   printf("The command received :: %s\n", commandName);
-   printf("format : %s\n", format);
-   printf("Payload is : %s\n", (char *)payload);
-}
+	//Disconnect the client
+	assert_int_equal(disconnect(&client),0);
+	free(devCfgPath);
 
-void testMsgReceived(){
-	unsigned char *payload = "{ \"d\" : { \"temp\" : 34 }}";
-
-	assert_int_equal(connectiotf(pclient),0);
-
-	setCommandHandler(pclient,myCallback);
-
-	assert_int_equal(publishEvent(pclient,"status","json", payload , QOS0),0);
-
-	//Construct message data for command
-	MessageData md;
-	int topicLen = 70;
-	int loadLen = 30;
-
-	MQTTString topicName;
-	topicName.lenstring.data = "iot-2/type/sample/id/first/cmd/command/fmt/json";
-	topicName.lenstring.len = topicLen;
-
-	MQTTMessage msg;
-	msg.payload = "{\"temp\":\"43\"}";
-	msg.payloadlen = loadLen;
-	md.message = &msg;
-	md.topicName = &topicName;
-
-	messageArrived(&md);
-
-	assert_int_equal(yield(pclient,10),0);
-
-	assert_int_equal(reconnect_delay(1), 3);
-	assert_int_equal(reconnect_delay(11), 60);
-	assert_int_equal(reconnect_delay(21), 600);
-	retry_connection(pclient);
 }
 
 int main(void)
@@ -150,18 +125,17 @@ int main(void)
 	const struct CMUnitTest tests[] = {
         cmocka_unit_test(testInitialize),
         cmocka_unit_test(testInitializeConfigfile),
-		cmocka_unit_test(testConnectIotf),
-		//cmocka_unit_test(testMockConnectIotf),
-		cmocka_unit_test_setup_teardown(testPublishEvent,setup,teardown),
-		cmocka_unit_test_setup_teardown(testMsgReceived,setup,teardown)
+	cmocka_unit_test(testConnectIotfAndPublishInQSMode),
+	cmocka_unit_test(testConnectIotfAndPublishWithCerts),
+	cmocka_unit_test(testConnectIotfAndPublishWithoutCerts),
     };
 
-	if(getenv("CTEST_HOME")!=NULL){
-	  printf("\n CTEST_HOME set to path %s\n",getenv("CTEST_HOME"));
+	if(isEMBDCHomeDefined()){
+	  printf("\n IOT_EMBDC_HOME set to path %s\n",getenv("IOT_EMBDC_HOME"));
 	  return cmocka_run_group_tests(tests, NULL, NULL);
 	}
 	else {
-	  printf("\n Error while setting CTEST_HOME variable....");
+	  printf("\n IOT_EMBDC_HOME Environment Variable not set");
 	  return -1;
 	}
 

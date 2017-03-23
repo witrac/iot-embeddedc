@@ -14,80 +14,25 @@
  *    Jeffrey Dare            - initial implementation and API implementation
  *    Sathiskumar Palaniappan - Added support to create multiple Iotfclient
  *                              instances within a single process
+ *    Lokesh Haralakatta      - Added SSL/TLS support
+ *    Lokesh Haralakatta      - Added Client Side Certificates support
  *******************************************************************************/
 
 #ifndef IOTCLIENT_H_
 #define IOTCLIENT_H_
 
-#include "MQTTClient.h"
-#include <ctype.h>
+#include "iotf_utils.h"
 
-#define BUFFER_SIZE 1024
-
-// all failure return codes must be negative(extending from mqttclient)
-enum errorCodes { CONFIG_FILE_ERROR = -3, MISSING_INPUT_PARAM = -4 };
-
-//configuration file structure
-struct config {
-	char org[15];
-	char domain[100];
-	char type[50];
-	char id[50];
-	char authmethod[10];
-	char authtoken[50];
-};
-
-//iotfclient
-struct iotfclient
-{
-	Network n;
-	Client c;
-	struct config config;
-	unsigned char buf[BUFFER_SIZE];
-        unsigned char readbuf[BUFFER_SIZE];
-        int isQuickstart;
-};
-
-typedef struct iotfclient Iotfclient;
-
-extern unsigned short keepAliveInterval;
-
-#define Iotfclient_initializer { NULL, DefaultClient, {"", "", "","", "", ""} }
-
-//Callback used to process commands
+//Callback used to process device commands
 typedef void (*commandCallback)(char* commandName, char *format, void* payload);
 
 /**
-* Function used to initialize the Watson IoT client
-* @param client - Reference to the Iotfclient
-* @param org - Your organization ID
-* @param domain - Your domain Name
-* @param type - The type of your device
-* @param id - The ID of your device
-* @param auth-method - Method of authentication (the only value currently supported is â€œtokenâ€�)
-* @param auth-token - API key token (required if auth-method is â€œtokenâ€�)
-*
-* @return int return code
-*/
-int initialize(Iotfclient *client, char *orgId, char *domain, char *deviceType, char *deviceId, char *authmethod, char *authtoken);
-/**
-* Function used to initialize the IBM Watson IoT client using the config file which is generated when you register your device
-* @param client - Reference to the Iotfclient
-* @param configFilePath - File path to the configuration file 
-*
-* @return int return code
-* error codes
-* CONFIG_FILE_ERROR -3 - Config file not present or not in right format
-*/
-int initialize_configfile(Iotfclient *client, char *configFilePath);
-
-/**
-* Function used to initialize the IBM Watson IoT client
+* Function used to subscribe to all commands.
 * @param client - Reference to the Iotfclient
 *
 * @return int return code
 */
-int connectiotf(Iotfclient *client);
+int subscribeCommands(iotfclient *client);
 
 /**
 * Function used to Publish events from the device to the IBM Watson IoT service
@@ -99,7 +44,11 @@ int connectiotf(Iotfclient *client);
 *
 * @return int return code from the publish
 */
-int publishEvent(Iotfclient *client, char *eventType, char *eventFormat, unsigned char* data, enum QoS qos);
+int publishEvent(iotfclient *client, char *eventType, char *eventFormat, char* data, enum QoS qos);
+
+/* Function called upon device receiving the message from platform.
+**/
+void messageArrived(MessageData* md);
 
 /**
 * Function used to set the Command Callback function. This must be set if you to recieve commands.
@@ -108,45 +57,7 @@ int publishEvent(Iotfclient *client, char *eventType, char *eventFormat, unsigne
 * @param cb - A Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* commandName, char* payload)
 * @return int return code
 */
-void setCommandHandler(Iotfclient *client, commandCallback cb);
+void setCommandHandler(iotfclient *client, commandCallback cb);
 
-/**
-* Function used to subscribe to all commands. This function is by default called when in registered mode.
-* @param client - Reference to the Iotfclient
-*
-* @return int return code
-*/
-int subscribeCommands(Iotfclient *client);
-
-/**
-* Function used to check if the client is connected
-* @param client - Reference to the Iotfclient
-*
-* @return int return code
-*/
-int isConnected(Iotfclient *client);
-
-/**
-* Function used to Yield for commands.
-* @param client - Reference to the Iotfclient
-* @param time_ms - Time in milliseconds
-* @return int return code
-*/
-int yield(Iotfclient *client, int time_ms);
-
-/**
-* Function used to disconnect from the IBM Watson IoT service
-* @param client - Reference to the Iotfclient
-*
-* @return int return code
-*/
-int disconnect(Iotfclient *client);
-
-/**
-* Function used to set the time to keep the connection alive with IBM Watson IoT service
-* @param keepAlive - time in secs
-*
-*/
-void setKeepAliveInterval(unsigned int keepAlive);
 
 #endif /* IOTCLIENT_H_ */

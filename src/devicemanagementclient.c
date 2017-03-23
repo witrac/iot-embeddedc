@@ -13,15 +13,12 @@
  * Contributors:
  *    Hari hara prasad Viswanathan, - initial implementation and API implementation
  *    Hari prasada Reddy P
- *    Hari Prasada Reddy P          - Added implementation for Device actions support 
- *
+ *    Hari Prasada Reddy P          - Added implementation for Device actions support
+ *    Lokesh Haralakatta      - Added SSL/TLS support
+ *    Lokesh Haralakatta      - Added Client Side Certificates support
  ****************************************/
 
 
-#include <stdio.h>
-#include <signal.h>
-#include <memory.h>
-#include <time.h>
 #include "devicemanagementclient.h"
 #include "cJSON.h"
 
@@ -30,19 +27,6 @@ commandCallback cbReboot;
 commandCallback cbFactoryReset;
 actionCallback cbFirmwareDownload;
 actionCallback cbFirmwareUpdate;
-
-//util functions
-void onMessage(MessageData* md);
-void messageResponse(MessageData* md);
-void messageUpdate(MessageData* md);
-void messageObserve(MessageData* md);
-void messageCancel(MessageData* md);
-void messageForAction(MessageData* md, bool isReboot);
-void generateUUID(char* uuid_str);
-int publish(char* publishTopic, char* data);
-void getMessageFromReturnCode(int rc, char* msg);
-void messageFirmwareDownload(MessageData* md);
-void messageFirmwareUpdate(MessageData* md);
 
 const char* dmUpdate = "iotdm-1/device/update";
 const char* dmObserve = "iotdm-1/observe";
@@ -73,7 +57,7 @@ volatile int interrupt = 0;
 int initialize_configfile_dm(char *configFilePath)
 {
 	int rc = -1;
-	rc = initialize_configfile(&dmClient.deviceClient, configFilePath);
+	rc = initialize_configfile(&dmClient.deviceClient, configFilePath,0);
 	return rc;
 }
 
@@ -92,10 +76,14 @@ int initialize_configfile_dm(char *configFilePath)
 *
 * @return int return code
 */
-int initialize_dm(char *orgId, char* domainName, char *deviceType, char *deviceId, char *authmethod, char *authToken)
+int initialize_dm(char *orgId, char* domainName, char *deviceType, char *deviceId,
+		  char *authmethod, char *authToken, char *serverCertPath, int useCerts,
+		  char *rootCACertPath, char *clientCertPath, char *clientKeyPath)
 {
 	int rc = -1;
-	rc = initialize(&dmClient.deviceClient, orgId, domainName, deviceType, deviceId, authmethod, authToken);
+	rc = initialize(&dmClient.deviceClient, orgId, domainName, deviceType, deviceId,
+			authmethod, authToken,serverCertPath,useCerts, rootCACertPath,
+			clientCertPath,clientKeyPath,0);
 	return rc;
 }
 
@@ -141,7 +129,7 @@ int publishEvent_dm(char *eventType, char *eventFormat, unsigned char* data, enu
 * Function used to set the Command Callback function. This must be set if you to recieve commands.
 *
 * @param handler Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* commandName, char* payload)
-* 
+*
 */
 void setCommandHandler_dm(commandCallback handler)
 {
@@ -163,7 +151,7 @@ void setManagedHandler_dm(commandCallback handler)
 
 /**
  * Register Callback function to Reboot request
- * 
+ *
  * @param handler Function pointer to the commandCallback. Its signature - void (*commandCallback)(char* Status, char* requestId,            void*       payload)
  *
 */
@@ -270,28 +258,28 @@ int disconnect_dm()
 
 /**
 * <p>Send a device manage request to Watson IoT Platform</p>
-* 
-* <p>A Device uses this request to become a managed device. 
-* It should be the first device management request sent by the 
-* Device after connecting to the IBM Watson IoT Platform. 
-* It would be usual for a device management agent to send this 
+*
+* <p>A Device uses this request to become a managed device.
+* It should be the first device management request sent by the
+* Device after connecting to the IBM Watson IoT Platform.
+* It would be usual for a device management agent to send this
 * whenever is starts or restarts.</p>
-* 
+*
 * <p>This method connects the device to Watson IoT Platform connect if its not connected already</p>
-* 
-* @param lifetime The length of time in seconds within 
+*
+* @param lifetime The length of time in seconds within
 *        which the device must send another Manage device request.
-*        if set to 0, the managed device will not become dormant. 
+*        if set to 0, the managed device will not become dormant.
 *        When set, the minimum supported setting is 3600 (1 hour).
-* 
+*
 * @param supportFirmwareActions Tells whether the device supports firmware actions or not.
 *        The device must add a firmware handler to handle the firmware requests.
-* 
+*
 * @param supportDeviceActions Tells whether the device supports Device actions or not.
 *        The device must add a Device action handler to handle the reboot and factory reset requests.
 *
 * @param reqId Function returns the reqId if the publish Manage request is successful.
-* 
+*
 * @return
 */
 void publishManageEvent(long lifetime, int supportFirmwareActions,
@@ -398,12 +386,12 @@ void updateLocationEx(double latitude, double longitude, double elevation, char*
 	char uuid_str[40];
 	generateUUID(uuid_str);
 	strcpy(currentRequestID,uuid_str);
-		
+
 	char data[500];
 	sprintf(data,"{\"d\":{\"longitude\":%f,\"latitude\":%f,\"elevation\":%f,\"measuredDateTime\":\"%s\",\"updatedDateTime\":\"%s\",\"accuracy\":%f},\"reqId\":\"%s\"}", latitude, longitude, elevation, updatedDateTime, updatedDateTime, accuracy, currentRequestID);
 
 	rc = publish(UPDATE_LOCATION, data);
-		
+
 	if(rc == SUCCESS)
 		strcpy(reqId, uuid_str);
 }
@@ -461,7 +449,7 @@ void clearErrorCodes(char* reqId)
  *
  * @param message The Log message that needs to be added to the Watson IoT Platform.
  *
- * @param timestamp The Log timestamp 
+ * @param timestamp The Log timestamp
  *
  * @param data The optional diagnostic string data
  *
@@ -596,15 +584,15 @@ int publish(char* publishTopic, char* data)
 	//signal(SIGINT, sigHandler);
 	//signal(SIGTERM, sigHandler);
 	interrupt =0;
-	while(!interrupt)
-		{
+	//while(!interrupt)
+		//{
 			rc = MQTTPublish(&dmClient.deviceClient.c, publishTopic , &pub);
 			if(rc == SUCCESS) {
 				rc = yield(&dmClient.deviceClient, 100);
 			}
-			if(!interrupt)
+			//if(!interrupt)
 				sleep(2);
-		}
+		//}
 	return rc;
 }
 
@@ -665,7 +653,7 @@ void generateUUID(char* uuid_str)
 
 // Utility function to get message from the return code
 void getMessageFromReturnCode(int rc, char* msg)
-{	
+{
 	switch(rc)
 	{
 	case 202:
@@ -677,7 +665,7 @@ void getMessageFromReturnCode(int rc, char* msg)
 	case 501:
 		strcpy(msg, "Device action is not supported");
 		break;
-	}	
+	}
 }
 
 //Handler for all requests and responses from the server. This function routes the
@@ -984,12 +972,11 @@ void messageResponse(MessageData* md)
 		reqID = strtok(reqID, ":\"");
 		reqID = strtok(NULL, ":\"");
 		reqID = strtok(NULL, ":\"");
-		
+
 		status= strtok(status, "}");
 		status= strtok(status, ":");
 		status= strtok(NULL, ":");
 
-		//printf("reqId:%s %d \tcurrent:%s %d\n",reqID, strlen(reqID),currentRequestID, strlen(currentRequestID));
 		if(!strcmp(currentRequestID,reqID))
 		{
 			interrupt = 1;
@@ -1009,7 +996,7 @@ void messageForAction(MessageData* md, bool isReboot)
 {
 	//printf("messageForAction called\n");
 	if(cbReboot != 0 ){
-	
+
 		MQTTMessage* message = md->message;
 
 		char *topic = malloc(md->topicName->lenstring.len + 1);
@@ -1033,7 +1020,7 @@ void messageForAction(MessageData* md, bool isReboot)
 		reqID = strtok(pl, ":\"");
 		reqID = strtok(NULL, ":\"");
 		reqID = strtok(NULL, ":\"");
-		
+
 		strcpy(currentRequestID,reqID);
 		printf("reqId: %s action: %s payload: %s\n",reqID, action, (char*)	payload);
 

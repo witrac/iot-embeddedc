@@ -12,13 +12,11 @@
  *
  * Contributors:
  *    Hari hara prasad  - initial implementation and API implementation
+ *    Lokesh Haralakatta - Added required changes to use Client Side certificates
  *******************************************************************************/
 
-#include <stdio.h>
-#include <signal.h>
 #include "devicemanagementclient.h"
-#include <time.h>
-
+#include "iotf_utils.h"
 
 void myCallback (char* commandName, char* format, void* payload)
 {
@@ -81,9 +79,18 @@ int main(int argc, char const *argv[])
 	int rc = -1;
 	int x=0;
 
-	char *configFilePath = "./device.cfg";
+	char *configFilePath;
+
+	if(isEMBDCHomeDefined()){
+
+	    getSamplesPath(&configFilePath);
+	    strcat(configFilePath,"/device.cfg");
+        }
+	else
+	    strCopy(&configFilePath,"./device.cfg");
 
 	rc = initialize_configfile_dm(configFilePath);
+	free(configFilePath);
 	if(rc != SUCCESS){
 		printf("initialize failed and returned rc = %d.\n Quitting..", rc);
 		scanf("%d",&x);
