@@ -13,4 +13,4 @@ add_test(test_devicemgmt test_devicemgmt)
 
 target_link_libraries(test_iotfclient iotfclient iotf_utils cmocka)
 target_link_libraries(test_gatewayclient iotfgwayclient iotf_utils cmocka)
-target_link_libraries(test_devicemgmt iotfdevmgt iotfclient iotf_utils cmocka)
+target_link_libraries(test_devicemgmt iotfdevmgt iotfclient iotf_utils cmocka m)
