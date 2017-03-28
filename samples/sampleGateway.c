@@ -52,6 +52,7 @@ int main(int argc, char const *argv[])
 	if(isEMBDCHomeDefined()){
 
 	    getSamplesPath(&configFilePath);
+	    configFilePath = realloc(configFilePath,strlen(configFilePath)+15);
 	    strcat(configFilePath,"gateway.cfg");
         }
 	else{

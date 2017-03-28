@@ -435,10 +435,10 @@ int main(void)
         cmocka_unit_test(testInitialize),
         cmocka_unit_test(testInitializeConfigfile),
 	cmocka_unit_test(testConnectIotf),
-	//cmocka_unit_test_setup_teardown(testPublishEvent,setup,teardown),
-	//cmocka_unit_test_setup_teardown(testManage,setup,teardown),
-	//cmocka_unit_test_setup_teardown(testDeviceActions,setup,teardown),
-	//cmocka_unit_test_setup_teardown(testDeviceFirmwareActions,setup,teardown)
+	cmocka_unit_test_setup_teardown(testPublishEvent,setup,teardown),
+	cmocka_unit_test_setup_teardown(testManage,setup,teardown),
+	cmocka_unit_test_setup_teardown(testDeviceActions,setup,teardown),
+	cmocka_unit_test_setup_teardown(testDeviceFirmwareActions,setup,teardown)
     };
     if(isEMBDCHomeDefined()){
       printf("\n IOT_EMBDC_HOME set to path %s\n",getenv("IOT_EMBDC_HOME"));

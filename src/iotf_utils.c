@@ -89,7 +89,7 @@
   	       LOG("",logStr);
   	       LOG("","==============  iotfclient.log Exit ==============");
   	       fclose(logger);
-
+               logger = NULL;
         }
  }
  /** Function to check whether environment variable IOT_EMBDC_HOME defined.
