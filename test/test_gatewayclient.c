@@ -153,7 +153,6 @@ int main(void)
 	cmocka_unit_test(testGatewayConnectAndPublishWithoutCerts),
 	cmocka_unit_test(testGatewayConnectAndPublishWithCerts),
     };
-
     if(isEMBDCHomeDefined()){
       printf("\n IOT_EMBDC_HOME set to path %s\n",getenv("IOT_EMBDC_HOME"));
       return cmocka_run_group_tests(tests, NULL, NULL);

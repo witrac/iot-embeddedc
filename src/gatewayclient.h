@@ -14,12 +14,14 @@
  *    Jeffrey Dare            - initial implementation
  *    Lokesh Haralakatta      - Added SSL/TLS support
  *    Lokesh Haralakatta      - Added Client Side Certificates support
+ *    Lokesh Haralakatta      - Separated out device client and gateway client specific code.
+ *                            - Retained gateway specific code here.
  *******************************************************************************/
 
 #ifndef GATEWAYCLIENT_H_
 #define GATEWAYCLIENT_H_
 
-#include "iotf_utils.h"
+#include "iotfclient.h"
 
 //Callback used to process commands
 typedef void (*commandCallback)(char* type, char* id, char* commandName, char *format,

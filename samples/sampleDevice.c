@@ -15,7 +15,7 @@
  *    Lokesh Haralakatta - Added required changes to use Client Side certificates
  *******************************************************************************/
 
-#include "iotfclient.h"
+#include "deviceclient.h"
 
 volatile int interrupt = 0;
 
@@ -50,10 +50,13 @@ int main(int argc, char const *argv[])
 	if(isEMBDCHomeDefined()){
 
 	    getSamplesPath(&configFilePath);
-	    strcat(configFilePath,"/device.cfg");
+	    strcat(configFilePath,"device.cfg");
         }
-	else
-	    strCopy(&configFilePath,"./device.cfg");
+	else{
+	    printf("IOT_EMBDC_HOME is not defined\n");
+	    printf("Define IOT_EMBDC_HOME to client library path to execute samples\n");
+	    return -1;
+        }
 
 	rc = initialize_configfile(&client, configFilePath,0);
 	free(configFilePath);
@@ -73,8 +76,10 @@ int main(int argc, char const *argv[])
 		return 0;
 	}
 
-	subscribeCommands(&client);
-	setCommandHandler(&client, myCallback);
+	if(!client.isQuickstart){
+	    subscribeCommands(&client);
+	    setCommandHandler(&client, myCallback);
+        }
 
 	while(!interrupt)
 	{

@@ -52,10 +52,13 @@ int main(int argc, char const *argv[])
 	if(isEMBDCHomeDefined()){
 
 	    getSamplesPath(&configFilePath);
-	    strcat(configFilePath,"/device.cfg");
+	    strcat(configFilePath,"gateway.cfg");
         }
-	else
-	    strCopy(&configFilePath,"./device.cfg");
+	else{
+	    printf("IOT_EMBDC_HOME is not defined\n");
+	    printf("Define IOT_EMBDC_HOME to client library path to execute samples\n");
+	    return -1;
+        }
 
 	rc = initialize_configfile(&client, configFilePath,1);
 	free(configFilePath);

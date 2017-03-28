@@ -12,9 +12,14 @@
  *
  * Contributors:
  *    Lokesh Haralakatta  -  Initial implementation
+ *    Lokesh Haralakatta  -  Added Logging Feature
  *******************************************************************************/
 
 #include "iotf_network_tls_wrapper.h"
+
+//Character strings to hold log header and log message to be dumped.
+char logHdr[LOG_BUF];
+char logStr[LOG_BUF];
 
 /** Function to initialize Network structure with defualt values and network functions
 * @param - Address of Network Structure Variable
@@ -22,6 +27,9 @@
 **/
 void NewNetwork(Network* n)
 {
+       sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+       LOG(logHdr,"entry::");
+
        n->my_socket = 0;
        n->mqttread = network_read;
        n->mqttwrite = network_write;
@@ -31,6 +39,9 @@ void NewNetwork(Network* n)
        n->TLSConnectData.pDeviceCertLocation = NULL;
        n->TLSConnectData.pDevicePrivateKeyLocation = NULL;
        n->TLSConnectData.pDestinationURL = NULL;
+
+       sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+       LOG(logHdr,"exit::");
 }
 
 /** Function to check whether the given timer is expired or not
@@ -100,6 +111,9 @@ void NewNetwork(Network* n)
  **/
  int ConnectNetwork(Network* n, char* addr, int port)
  {
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        LOG(logHdr,"entry::");
+
  	int type = SOCK_STREAM;
  	struct sockaddr_in address;
  	int rc = -1;
@@ -127,6 +141,10 @@ void NewNetwork(Network* n)
  			address.sin_port = htons(port);
  			address.sin_family = family = AF_INET;
  			address.sin_addr = ((struct sockaddr_in*)(result->ai_addr))->sin_addr;
+
+                        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+                        sprintf(logStr,"%s","ADDR FAMILY: AF_INET");
+                        LOG(logHdr,logStr);
  		}
  		else
  			rc = -1;
@@ -137,11 +155,25 @@ void NewNetwork(Network* n)
  	if (rc == 0)
  	{
  		n->my_socket = socket(family, type, 0);
+
+                sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+                sprintf(logStr,"Socket FD: %d",n->my_socket);
+                LOG(logHdr,logStr);
+
  		if (n->my_socket != -1)
  		{
  			rc = connect(n->my_socket, (struct sockaddr*)&address, sizeof(address));
+
+                        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+                        sprintf(logStr,"RC from connect - %d :",rc);
+                        LOG(logHdr,logStr);
  		}
  	}
+
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        sprintf(logStr,"rc = %d ",rc);
+        LOG(logHdr,logStr);
+        LOG(logHdr,"exit::");
 
  	return rc;
  }
@@ -156,6 +188,9 @@ void NewNetwork(Network* n)
  **/
  int network_read(Network* n, unsigned char* buffer, int len, int timeout_ms)
  {
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        LOG(logHdr,"entry::");
+
  	struct timeval interval = {timeout_ms / 1000, (timeout_ms % 1000) * 1000};
  	if (interval.tv_sec < 0 || (interval.tv_sec == 0 && interval.tv_usec <= 0))
  	{
@@ -173,7 +208,9 @@ void NewNetwork(Network* n)
  		{
  			if (errno != ENOTCONN && errno != ECONNRESET)
  			{
-                                mbedtls_printf("network_read failed while calling recv with message - %s\n",strerror(rc));
+                                sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+                                sprintf(logStr,"network_read failed while calling recv with message - %s\n",strerror(rc));
+                                LOG(logHdr,logStr);
  				bytes = -1;
  				break;
  			}
@@ -181,6 +218,12 @@ void NewNetwork(Network* n)
  		else
  			bytes += rc;
  	}
+
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        sprintf(logStr,"bytes - %d ",bytes);
+        LOG(logHdr,logStr);
+        LOG(logHdr,"exit::");
+
  	return bytes;
  }
 
@@ -194,6 +237,9 @@ void NewNetwork(Network* n)
  **/
  int network_write(Network* n, unsigned char* buffer, int len, int timeout_ms)
  {
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        LOG(logHdr,"entry::");
+
  	struct timeval tv;
         int rc = -1;
 
@@ -203,9 +249,17 @@ void NewNetwork(Network* n)
  	setsockopt(n->my_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
  	rc = write(n->my_socket, buffer, len);
         if(rc < 0){
-                mbedtls_printf("network_write failed while calling write with message - %s\n",strerror(rc));
+                sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+                sprintf(logStr,"network_write failed while calling write with message - %s\n",strerror(rc));
+                LOG(logHdr,logStr);
                 rc = -1;
         }
+
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        sprintf(logStr,"rc = %d ",rc);
+        LOG(logHdr,logStr);
+        LOG(logHdr,"exit::");
+
  	return rc;
  }
 
@@ -231,6 +285,9 @@ void NewNetwork(Network* n)
  *         - -1 on FAILURE
  **/
  int initialize_tls(tls_init_params *tlsInitParams, int useClientCerts){
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        LOG(logHdr,"entry::");
+
         int rc=-1;
         mbedtls_net_init( &(tlsInitParams->server_fd) );
         mbedtls_ssl_init( &(tlsInitParams->ssl) );
@@ -247,8 +304,16 @@ void NewNetwork(Network* n)
         if((rc = mbedtls_ctr_drbg_seed( &(tlsInitParams->ctr_drbg), mbedtls_entropy_func, &(tlsInitParams->entropy),
                             (const unsigned char *) tlsInitParams->clientName,
                             strlen( tlsInitParams->clientName) ) )!= 0){
-                mbedtls_printf("mbedtls_ctr_drbg_seed failed with return code = %d\n",rc);
+                sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+                sprintf(logStr,"mbedtls_ctr_drbg_seed failed with return code = 0x%x",rc);
+                LOG(logHdr,logStr);
         }
+
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        sprintf(logStr,"rc = %d ",rc);
+        LOG(logHdr,logStr);
+        LOG(logHdr,"exit::");
+
         return rc;
  }
 
@@ -281,65 +346,90 @@ void NewNetwork(Network* n)
  **/
  int tls_connect(tls_init_params *tlsInitData,tls_connect_params *tlsConnectData,
                 const char *server, const int port, int useClientCerts){
+
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        LOG(logHdr,"entry::");
+
         int rc=-1;
         char str_port[10];
-        char err_str[50];
         sprintf(str_port,"%d",port);
+
         //Remove the comment from mbedtls_debug_set_threshold for debugging purpose
         //mbedtls_debug_set_threshold(4);
+
         if((rc = initialize_tls(tlsInitData,useClientCerts))!=0)
         {
-            mbedtls_printf("initialize_tls failed with return code = 0x%x\n",-rc);
-            return rc;
+            sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+            sprintf(logStr,"initialize_tls failed with return code = 0x%x",-rc);
+            LOG(logHdr,logStr);
+            goto exit;
         }
         if((rc = mbedtls_net_connect(&(tlsInitData->server_fd), server, str_port, MBEDTLS_NET_PROTO_TCP )) != 0){
-            mbedtls_printf("mbedtls_net_connect failed with return code = 0x%x\n",-rc);
-            return rc;
+            sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+            sprintf(logStr,"mbedtls_net_connect failed with return code = 0x%x",-rc);
+            LOG(logHdr,logStr);
+            goto exit;
         }
         if((rc = mbedtls_net_set_block(&(tlsInitData->server_fd)))!=0){
-            mbedtls_printf("mbedtls_net_set_block failed with return code = 0x%x\n",-rc);
-            return rc;
+            sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+            sprintf(logStr,"mbedtls_net_set_block failed with return code = 0x%x",-rc);
+            LOG(logHdr,logStr);
+            goto exit;
         }
 
         if((rc = mbedtls_x509_crt_parse_file(&(tlsInitData->cacert),tlsConnectData->pServerCertLocation))!=0)
         {
-            mbedtls_printf("mbedtls_x509_crt_parse_file failed for Server CA certificate with return code = 0x%x\n",-rc);
-            return rc;
+            sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+            sprintf(logStr,"mbedtls_x509_crt_parse_file failed for Server CA certificate with return code = 0x%x",-rc);
+            LOG(logHdr,logStr);
+            goto exit;
         }
 
         if(useClientCerts){
           if((rc = mbedtls_x509_crt_parse_file(&(tlsInitData->cacert),tlsConnectData->pRootCACertLocation))!=0)
           {
-            mbedtls_printf("mbedtls_x509_crt_parse_file failed for Root CA certificate with return code = 0x%x\n",-rc);
-            return rc;
+            sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+            sprintf(logStr,"mbedtls_x509_crt_parse_file failed for Root CA certificate with return code = 0x%x",-rc);
+            LOG(logHdr,logStr);
+            goto exit;
           }
           if((rc = mbedtls_x509_crt_parse_file(&(tlsInitData->clicert), tlsConnectData->pDeviceCertLocation))!=0)
           {
-            mbedtls_printf("mbedtls_x509_crt_parse_file failed for Device Certificate with return code = 0x%x\n",-rc);
-            return rc;
+            sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+            sprintf(logStr,"mbedtls_x509_crt_parse_file failed for Device Certificate with return code = 0x%x",-rc);
+            LOG(logHdr,logStr);
+            goto exit;
           }
           if((rc = mbedtls_pk_parse_keyfile(&(tlsInitData->pkey), tlsConnectData->pDevicePrivateKeyLocation, ""))!=0)
           {
-            mbedtls_printf("mbedtls_pk_parse_keyfile failed for Device Private Key with return code = 0x%x\n",-rc);
-            return rc;
+            sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+            sprintf(logStr,"mbedtls_pk_parse_keyfile failed for Device Private Key with return code = 0x%x",-rc);
+            LOG(logHdr,logStr);
+            goto exit;
           }
           if((rc = mbedtls_ssl_conf_own_cert(&(tlsInitData->conf), &(tlsInitData->clicert),
                        &(tlsInitData->pkey)))!=0)
           {
-              mbedtls_printf("mbedtls_ssl_conf_own_cert failed with return code = 0x%x\n",-rc);
-              return rc;
+              sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+              sprintf(logStr,"mbedtls_ssl_conf_own_cert failed with return code = 0x%x",-rc);
+              LOG(logHdr,logStr);
+              goto exit;
           }
           if((rc = mbedtls_ssl_set_hostname( &(tlsInitData->ssl), tlsConnectData->pDestinationURL)) != 0 )
           {
-              mbedtls_printf("mbedtls_ssl_set_hostname failed with rc - 0x%x\n", -rc );
-              return rc;
+              sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+              sprintf(logStr,"mbedtls_ssl_set_hostname failed with rc = 0x%x",-rc);
+              LOG(logHdr,logStr);
+              goto exit;
           }
         }
         if((rc = mbedtls_ssl_config_defaults(&(tlsInitData->conf),MBEDTLS_SSL_IS_CLIENT,
                       MBEDTLS_SSL_TRANSPORT_STREAM,MBEDTLS_SSL_PRESET_DEFAULT ))!=0)
         {
-                mbedtls_printf("mbedtls_ssl_config_defaults failed with return code = 0x%x\n",-rc);
-                return rc;
+                sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+                sprintf(logStr,"mbedtls_ssl_config_defaults failed with return code = 0x%x",-rc);
+                LOG(logHdr,logStr);
+                goto exit;
         }
         mbedtls_ssl_conf_max_version(&(tlsInitData->conf),MBEDTLS_SSL_MAJOR_VERSION_3,MBEDTLS_SSL_MINOR_VERSION_3);
         mbedtls_ssl_conf_min_version(&(tlsInitData->conf),MBEDTLS_SSL_MAJOR_VERSION_3,MBEDTLS_SSL_MINOR_VERSION_3);
@@ -350,23 +440,35 @@ void NewNetwork(Network* n)
         mbedtls_ssl_set_bio(&(tlsInitData->ssl), &(tlsInitData->server_fd), mbedtls_net_send, mbedtls_net_recv, NULL );
         if((rc = mbedtls_ssl_setup(&(tlsInitData->ssl), &(tlsInitData->conf))) != 0 )
         {
-                mbedtls_printf("mbedtls_ssl_setup failed with rc = 0x%x\n",-rc);
-                return rc;
+                sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+                sprintf(logStr,"mbedtls_ssl_setup failed with rc = 0x%x",-rc);
+                LOG(logHdr,logStr);
+                goto exit;
         }
         while((rc = mbedtls_ssl_handshake(&(tlsInitData->ssl))) != 0 )
         {
            if( rc != MBEDTLS_ERR_SSL_WANT_READ && rc != MBEDTLS_ERR_SSL_WANT_WRITE )
            {
-                mbedtls_strerror(rc,err_str,strlen(err_str));
-                mbedtls_printf("mbedtls_ssl_handshake failed with rc - 0x%x\n", -rc );
-                if(rc == MBEDTLS_ERR_SSL_HELLO_VERIFY_REQUIRED)
-                  mbedtls_printf("ssl_handshake failed with MBEDTLS_ERR_SSL_HELLO_VERIFY_REQUIRED\n");
-                mbedtls_printf("ssl state = %d\n",tlsInitData->ssl.state);
-                mbedtls_printf("ssl version = %s\n",mbedtls_ssl_get_version(&(tlsInitData->ssl)));
-                mbedtls_printf("Ciphersuite = %s\n",mbedtls_ssl_get_ciphersuite(&(tlsInitData->ssl)));
+                sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+                sprintf(logStr,"mbedtls_ssl_handshake failed with rc = 0x%x",-rc);
+                LOG(logHdr,logStr);
+                if(rc == MBEDTLS_ERR_SSL_HELLO_VERIFY_REQUIRED){
+                  sprintf(logStr,"ssl_handshake failed with MBEDTLS_ERR_SSL_HELLO_VERIFY_REQUIRED");
+                  LOG(logHdr,logStr);
+                }
+                sprintf(logStr,"ssl state = %d",tlsInitData->ssl.state);
+                LOG(logHdr,logStr);
+                sprintf(logStr,"ssl version = %s",mbedtls_ssl_get_version(&(tlsInitData->ssl)));
+                LOG(logHdr,logStr);
                 break;
             }
         }
+  exit:
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        sprintf(logStr,"rc = %d ",rc);
+        LOG(logHdr,logStr);
+        LOG(logHdr,"exit::");
+
         return rc;
  }
 
@@ -380,6 +482,9 @@ void NewNetwork(Network* n)
  **/
  int tls_read(Network* n, unsigned char* buffer, int len, int timeout_ms)
  {
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        LOG(logHdr,"entry::");
+
         int rc = -1;
         tls_init_params *tlsInitData = &(n->TLSInitData);
  	struct timeval interval = {timeout_ms / 1000, (timeout_ms % 1000) * 1000};
@@ -396,7 +501,9 @@ void NewNetwork(Network* n)
                 if(rc == 0 || rc == -76)
  		     break;
                 else if(rc < 0 ){
-                   mbedtls_printf("mbedtls_ssl_read failed with rc = %d\n", rc);
+                   sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+                   sprintf(logStr,"mbedtls_ssl_read failed with rc = %d",rc);
+                   LOG(logHdr,logStr);
                    bytes = -1;
                    break;
                 }
@@ -404,6 +511,12 @@ void NewNetwork(Network* n)
  		else
  			bytes += rc;
  	}
+
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        sprintf(logStr,"bytes - %d ",bytes);
+        LOG(logHdr,logStr);
+        LOG(logHdr,"exit::");
+
  	return bytes;
  }
 
@@ -417,6 +530,9 @@ void NewNetwork(Network* n)
  **/
  int tls_write(Network* n, unsigned char* buffer, int len, int timeout_ms)
  {
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        LOG(logHdr,"entry::");
+
  	struct timeval tv;
  	int rc = -1;
         tls_init_params *tlsInitData = &(n->TLSInitData);
@@ -424,8 +540,16 @@ void NewNetwork(Network* n)
  	tv.tv_usec = timeout_ms * 1000;  // Not init'ing this can cause strange errors
  	setsockopt(tlsInitData->server_fd.fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
         if((rc = mbedtls_ssl_write(&(tlsInitData->ssl),buffer,len)) < 0){
-           mbedtls_printf("mbedtls_ssl_write failed with rc = 0x%x\n", -rc);
+                sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+                sprintf(logStr,"mbedtls_ssl_write failed with rc = %d",rc);
+                LOG(logHdr,logStr);
         }
+
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        sprintf(logStr,"rc = %d ",rc);
+        LOG(logHdr,logStr);
+        LOG(logHdr,"exit::");
+
  	return rc;
  }
 
@@ -435,6 +559,9 @@ void NewNetwork(Network* n)
  * @return - void
  **/
 void teardown_tls(tls_init_params *tlsInitParams,tls_connect_params* tlsConnectData){
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        LOG(logHdr,"entry::");
+
         mbedtls_net_free( &(tlsInitParams->server_fd) );
         mbedtls_ssl_free( &(tlsInitParams->ssl) );
         mbedtls_ssl_config_free( &(tlsInitParams->conf) );
@@ -443,6 +570,9 @@ void teardown_tls(tls_init_params *tlsInitParams,tls_connect_params* tlsConnectD
         mbedtls_x509_crt_free( &(tlsInitParams->cacert) );
 
         freeTLSConnectData(tlsConnectData);
+
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        LOG(logHdr,"exit::");
  }
 
  /** Function to clear off the memory allocated for certificates location.
@@ -450,9 +580,15 @@ void teardown_tls(tls_init_params *tlsInitParams,tls_connect_params* tlsConnectD
  * @return - void
  **/
 void freeTLSConnectData(tls_connect_params* tlsConnectData){
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        LOG(logHdr,"entry::");
+
         freePtr(tlsConnectData->pServerCertLocation);
         freePtr(tlsConnectData->pRootCACertLocation);
         freePtr(tlsConnectData->pDeviceCertLocation);
         freePtr(tlsConnectData->pDevicePrivateKeyLocation);
         freePtr(tlsConnectData->pDestinationURL);
+
+        sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+        LOG(logHdr,"exit::");
 }

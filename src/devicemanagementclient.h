@@ -22,6 +22,7 @@
 
 #include <stdbool.h>
 #include "iotfclient.h"
+#include "deviceclient.h"
 
 //Macros for the device management requests
 #define MANAGE "iotdevice-1/mgmt/manage"

@@ -15,7 +15,7 @@
  *    Lokesh Haralakatta - Added required changes to use Client Side certificates
  *******************************************************************************/
 
-#include "iotfclient.h"
+#include "deviceclient.h"
 
 volatile int interrupt = 0;
 
@@ -43,17 +43,19 @@ void usage()
 
 int main(int argc, char *argv[])
 {
-	int useCerts = argv[5][0] - '0';
+        int useCerts = 0;
 	if ( argc < 6 ){
 		printf("Sample expects minimum of 5 args.\n");
 		usage();
 	}
-	else if ( useCerts && argc != 9){
+	else{
+	      useCerts = argv[5][0] - '0';
+     	      if ( useCerts && argc != 9){
 		printf("Sample expects extactly 9 args when useCerts = %d.\n",useCerts);
 		usage();
-	}
-	else
-	{
+	      }
+	      else
+	      {
 		int rc = -1;
 		//catch interrupt signal
 		signal(SIGINT, sigHandler);
@@ -96,5 +98,6 @@ int main(int argc, char *argv[])
 		disconnect(&client);
 
 		return 0;
-	}
+	      }
+      }
 }

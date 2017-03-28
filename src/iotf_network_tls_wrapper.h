@@ -49,9 +49,7 @@
 #include "mbedtls/error.h"
 #include "mbedtls/certs.h"
 
-
-//Wrapper for printf function
-#define mbedtls_printf printf
+#include "iotf_utils.h"
 
 //tls initialization paramaters
 typedef struct
