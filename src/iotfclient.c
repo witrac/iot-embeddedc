@@ -265,6 +265,12 @@ int get_config(char * filename, Config * configstr) {
        }
        char line[256];
        int linenum = 0;
+       strCopy(&configstr->domain,"internetofthings.ibmcloud.com");
+
+       sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
+       sprintf(logStr,"Default domainName: %s",configstr->domain);
+       LOG(logHdr,logStr);
+
        while (fgets(line, 256, prop) != NULL) {
 	      char* prop;
 	      char* value;
@@ -465,7 +471,7 @@ int connectiotf(iotfclient  *client)
 	   sprintf(logStr,"RC from MQTTConnect: %d",rc);
 	   LOG(logHdr,logStr);
        }
-       
+
 exit:
         sprintf(logHdr,"%s:%d:%s:",__FILE__,__LINE__,__func__);
 	sprintf(logStr,"rc = %d",rc);
