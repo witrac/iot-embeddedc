@@ -26,17 +26,18 @@ Get the source from github repository: `git clone https://github.com/ibm-watson-
 
 We shoud now have a directory `iot-embeddedc`, which is our `IOT_EMBDC_HOME`.
 
-Install the Dependencies and Build the library
--------------------------------------------------
+Installing the Dependencies and Building the Library
+----------------------------------------------------
 1. Set the environment variable IOT_EMBDC_HOME: `export IOT_EMBDC_HOME=$HOME/iot-embeddedc/`
 2. Change to $IOT_EMBDC_HOME path and run the script - `cd $IOT_EMBDC_HOME ; ./setup.sh`
 
-The setsup.sh script installs listed dependencies under Dependencies Section and it copies the dependencies into the lib directory after making necessary changes.
+The `setsup.sh` script installs listed dependencies under Dependencies Section and it copies the dependencies into the lib directory after making necessary changes.
 
-3. Create directory build within $IOT_EMBDC_HOME Path: `mkdir $IOT_EMBDC_HOME/build`
-4. Change to $IOT_EMBDC_HOME/build directory to build the library: `cd $IOT_EMBDC_HOME/build`
-5. Run CMake to collect all required build details and to create Makefile: `cmake ..`
-6. Run make to build the library, samples and tests: `make`
+3. Create directory `build` within $IOT_EMBDC_HOME Path: `mkdir $IOT_EMBDC_HOME/build`
+4. Change to `$IOT_EMBDC_HOME/build` directory to build the library: `cd $IOT_EMBDC_HOME/build`
+5. Install `CMake` Utility if it's not already installed referring to the link - https://cmake.org/
+6. Run `CMake` to collect all required build details and to create Makefile: `cmake ..`
+7. Run make to build the library, samples and tests: `make`
 
 Dependencies
 ------------
@@ -60,16 +61,16 @@ If the dependencies were not able to be installed with the script on the device,
 Embedded C Client Library - Devices
 ===================================
 
-The *iotfclient* is client for the IBM Watson Internet of Things Platform service can be connected either as device client or gateway client. At the time of initialization, we need to specify, client is of type, device client or gateway client. We can use device client to connect to the service, publish events and subscribe to commands.
+The `iotfclient` is client for the IBM Watson Internet of Things Platform service can be connected either as `device client` or `gateway client`. At the time of initialization, we need to specify the client type - `device client` or `gateway client`. We can use `device client` to connect to the Watson IoT platform, publish events and subscribe to commands.
 
 Initialize
 ----------
 
-There are 2 ways to initialize the *iotfclient*.
+There are 2 ways to initialize the `iotfclient` as Device Client.
 
 ### Passing as parameters
 
-The function *initialize* takes the following details to connect as device to the IBM Watson Internet of Things Platform service:
+The function `initialize` takes the following details to connect as device to the IBM Watson IoT Platform service:
 
 -   client - Pointer to the *iotfclient*
 -   org - Your organization ID
@@ -84,7 +85,7 @@ The function *initialize* takes the following details to connect as device to th
 -   clientKeyPath= Client Private Key Path if useClientCertificates=1 otherwise leave blank
 -   clientType = 0 for device client
 ``` {.sourceCode .c}
-#include "iotfclient.h"
+#include "deviceclient.h"
    ....
    ....
 
@@ -101,10 +102,10 @@ The function *initialize* takes the following details to connect as device to th
 
 ### Using a configuration file
 
-The function *initialize\_configfile* takes pointer to *iotfclient*, the configuration file path and value 0 for device client as a parameters:
+The function `initialize_configfile` takes pointer to `iotfclient`, the configuration file path and 0 for `clientType` as parameters:
 
 ``` {.sourceCode .c}
-#include "iotfclient.h"
+#include "deviceclient.h"
    ....
    ....
    char* configFilePath="./device.cfg";
@@ -120,7 +121,7 @@ The configuration file must be in the below given format:
 
 ``` {.sourceCode .}
 org=$orgId
-domain=$domain
+domain=$domainName
 type=$myDeviceType
 id=$myDeviceId
 auth-method=token
@@ -134,7 +135,7 @@ clientKeyPath=$clientKeyPath if useClientCertificates=1 otherwise leave blank
 
 ##### Return codes
 
-Following are the return codes in the *initialize* function:
+Following are the return codes in the `initialize` function:
 
 * CONFIG_FILE_ERROR   -3
 * MISSING_INPUT_PARAM   -4
@@ -143,10 +144,10 @@ Following are the return codes in the *initialize* function:
 Connect
 -------
 
-After initializing the *iotfclient*, we can connect to the IBM Watson Internet of Things Platform by calling the *connectiotf* function
+After initializing the `iotfclient`, we can connect to the IBM Watson Internet of Things Platform by calling the `connectiotf` function
 
 ``` {.sourceCode .c}
-#include "iotfclient.h"
+#include "deviceclient.h"
    ....
    ....
    char* configFilePath="./device.cfg";
@@ -171,7 +172,7 @@ After initializing the *iotfclient*, we can connect to the IBM Watson Internet o
 
 ##### Return Codes
 
-The IoTF *connectiotf* function return codes are as shown below:
+The IoTF `connectiotf` function return codes are as shown below:
 
 * MQTTCLIENT_SUCCESS   0
 * MQTTCLIENT_FAILURE   -1
@@ -184,14 +185,15 @@ The IoTF *connectiotf* function return codes are as shown below:
 Handling commands
 -----------------
 
-When the device client connects in registered mode, to process specific commands, we need to subscribe to commands by calling the function *subscribeCommands* and then register a command callback function by calling the function *setCommandHandler*. The commands are returned as
+When the device client connects in registered mode, to process specific commands, we need to subscribe to commands by calling the function `subscribeCommands` and then register a command callback function by calling the function `setCommandHandler`. 
 
+The commands are returned as:
 -   commandName - name of the command invoked
 -   format - e.g json, xml
 -   payload
 
 ``` {.sourceCode .c}
-#include "iotfclient.h"
+#include "deviceclient.h"
 ....
 ....
 
@@ -223,12 +225,12 @@ void myCallback (char* commandName, char* format, void* payload)
 
 ```
 
-**Note** : *yield* function must be called periodically to receive commands.
+**Note** : `yield` function must be called periodically to receive commands.
 
 Publishing events
 ------------------
 
-Events can be published by using the function publishEvent. The parameters to the function are:
+Events can be published by using the function `publishEvent`. The parameters to the function are:
 
 -   eventType - Type of event to be published e.g status, gps
 -   eventFormat - Format of the event e.g json
@@ -236,7 +238,7 @@ Events can be published by using the function publishEvent. The parameters to th
 -   QoS - qos for the publish event. Supported values : QOS0, QOS1, QOS2
 
 ``` {.sourceCode .c}
-#include "iotfclient.h"
+#include "deviceclient.h"
  ....
  rc = connectiotf (&client);
  char *payload = {\"d\" : {\"temp\" : 34 }};
@@ -251,7 +253,7 @@ Disconnect Client
 Disconnects the client, releases the connections and frees the memory.
 
 ``` {.sourceCode .c}
-#include "iotfclient.h"
+#include "deviceclient.h"
  ....
  rc = connectiotf (org, type, id , authmethod, authtoken);
  char *payload = {\"d\" : {\"temp\" : 34 }};
@@ -266,16 +268,16 @@ Disconnects the client, releases the connections and frees the memory.
 Embedded C Client Library - Gateways
 =====================================
 
-The *iotfclient* also be used as the gateway client for the IBM Watson Internet of Things Platform. We can use gateway client to connect to the platform, publish gateway events, publish device events on behalf of the devices, subscribe to both gateway and device commands.
+The `iotfclient` also be used as the gateway client for the IBM Watson Internet of Things Platform. We can use gateway client to connect to the Watson IoT platform, publish gateway events, publish device events on behalf of the devices, subscribe to both gateway and device commands.
 
 Initialize
 ----------
 
-There are 2 ways to initialize the *gatewayclient*.
+There are 2 ways to initialize the `iotfclient` as Gateway Client.
 
 ### Passing as parameters
 
-The function *initialize* takes the following details to connect as gateway client to the IBM Watson Internet of Things Platform service:
+The function `initialize` takes the following details to connect as gateway client to the IBM Watson IoT Platform service:
 
 -   client - Pointer to the *iotfclient*
 -   org - Your organization ID
@@ -308,7 +310,7 @@ The function *initialize* takes the following details to connect as gateway clie
 
 ### Using a configuration file
 
-The function *initialize_configfile* takes pointer to *iotfclient*, the configuration file path and client type as 1 for gateway client as parameters.
+The function `initialize_configfile` takes pointer to `iotfclient`, the configuration file path and 1 for `clientType` as parameters.
 
 ``` {.sourceCode .c}
 #include "gatewayclient.h"
@@ -322,10 +324,11 @@ The function *initialize_configfile* takes pointer to *iotfclient*, the configur
    ....
 ```
 
-The configuration file must be in the format of
+The configuration file must be in the below given format:
 
 ``` {.sourceCode .}
 org=$orgId
+domain=$domainName
 type=$myGatewayType
 id=$myGatewayId
 auth-method=token
@@ -339,7 +342,7 @@ clientKeyPath=$clientKeyPath if useClientCertificates=1 otherwise leave blank
 
 ##### Return codes
 
-Following are the return codes in the *initialize* and *initialize_configfile* function for gateway client:
+Following are the return codes in the `initialize` and `initialize_configfile` function for gateway client:
 
 * CONFIG_FILE_ERROR   -3
 * MISSING_INPUT_PARAM   -4
@@ -349,7 +352,7 @@ Following are the return codes in the *initialize* and *initialize_configfile* f
 Connect
 -------
 
-After initializing the *gatewayclient*, we can connect to IBM Watson Internet of Things Platform by calling the *connectiotf* function:
+After initializing the `gatewayclient`, we can connect to IBM Watson IoT Platform by calling the `connectiotf` function:
 
 ``` {.sourceCode .c}
 #include "gatewayclient.h"
@@ -378,7 +381,7 @@ After initializing the *gatewayclient*, we can connect to IBM Watson Internet of
 
 ##### Return Codes
 
-The IoTF *connectiotf* function return codes:
+The IoTF `connectiotf` function return codes:
 
 * MQTTCLIENT_SUCCESS   0
 * MQTTCLIENT_FAILURE   -1
@@ -391,8 +394,8 @@ The IoTF *connectiotf* function return codes:
 Handling commands
 -----------------
 
-When the gateway client connects, it will not automatically subscribes to commands for the gateway and devices. We need to subscribe ourselves using the functions -  *subscribeToDeviceCommands* and *subscribeToGatewayCommands*.
-For subscribing for device commands we need to use *subscribeToDeviceCommands*. We need to provide the device Type , deivce Id, command name, the command format and QOS.
+When the gateway client connects, it does not automatically subscribe to commands for the gateway and devices. We need to subscribe ourselves using the functions -  `subscribeToDeviceCommands` and `subscribeToGatewayCommands`.
+For subscribing for device commands we need to use `subscribeToDeviceCommands`. We need to provide the deviceType , deivceId, commandName, the commandFormat and QOS as parameters.
 
 ``` {.sourceCode .c}
 #include "gatewayclient.h"
@@ -425,7 +428,7 @@ For subscribing for device commands we need to use *subscribeToDeviceCommands*. 
 ##### Process Commands
 
 To process specific commands we need to register a command callback function by calling the function
-*setGatewayCommandHandler*. The commands are returned in the below format:
+`setGatewayCommandHandler`. The commands are returned in the below format:
 
 -   type - Type of the Gateway/Device
 -   id - ID of the Gateway/Device
@@ -483,11 +486,12 @@ void myCallback (char* type, char* id, char* commandName, char *format, void* pa
 
 ```
 
-**Note** : *yield* function must be called periodically to receive commands.
+**Note** : `yield` function must be called periodically to receive commands.
 
 Publishing events
 ------------------
-A gateway can publish events from itself and on behalf of any device connected via the gateway. Events can be published by using the functions publishGatewayEvents and publishDeviceEvents with the below parameters:
+A gateway can publish events from itself and on behalf of any device connected via the gateway. Events can be published by using the functions `publishGatewayEvents` and `publishDeviceEvents` with the below parameters:
+
 -   eventType - Type of event to be published e.g status, gps
 -   eventFormat - Format of the event e.g json
 -   data - Payload of the event
@@ -523,7 +527,10 @@ Disconnects the client, releases the connections and frees the memory
 
 Running the Device and Gateway Samples
 --------------------------------------
-There are couple of sample programs available in the samples directory under `$IOT_EMBDC_HOME` directory. Before running them, update the configuration files as described in the above sections.
+There are couple of sample programs available in the samples directory under `$IOT_EMBDC_HOME` directory. Before running them, 
+- Update the configuration files as described in the above sections.
+- To enable logging, set the envrionment variable IOT_EMBDC_LOGGING - `export IOT_EMBDC_LOGGING=ON`
+- If `IOT_EMBDC_HOME` is set, then `$IOT_EMBDC_HOME/iotclient.log` is used for logging otherwise `./iotclient.log` is used.
 
 Run helloWorld sample being in the path `$IOT_EMBDC_HOME/build`:
 
@@ -532,14 +539,14 @@ Run helloWorld sample being in the path `$IOT_EMBDC_HOME/build`:
 Run Device Sample being in the path `$IOT_EMBDC_HOME/build`:
 
 	./samples/sampleDevice
+	
 Run Gateway Sample being in the path `$IOT_EMBDC_HOME/build`:
 
 	./samples/sampleGateway
 
 
-======================================
 Embedded C Library - Managed Device
-======================================
+-----------------------------------
 
 Introduction
 -------------
@@ -564,12 +571,11 @@ Connecting to the Internet of Things Platform Device Management Service
 Initialize
 ----------
 
-There are 2 ways to initialize the *iotfclient*.
+There are 2 ways to initialize the `iotfclient`.
 
 ### Passing as parameters
 
-The function *initialize* takes the following details to connect to the
-IBM Watson Internet of Things Platform service
+The function `initialize` takes the following details as parameters:
 
 -   client - Pointer to the *iotfclient*
 -   org - Your organization ID
@@ -598,7 +604,7 @@ IBM Watson Internet of Things Platform service
 
 ### Using a configuration file
 
-The function *initialize\_configfile\_dm* takes the configuration file path as a parameter.
+The function `initialize_configfile_dm` takes the configuration file path as a parameter.
 
 ``` {.sourceCode .c}
 #include "devicemanagementclient.h"
@@ -609,10 +615,11 @@ The function *initialize\_configfile\_dm* takes the configuration file path as a
    ....
 ```
 
-The configuration file must be in the format of
+The configuration file must be in the below given format:
 
 ``` {.sourceCode .}
 org=$orgId
+domain=$domainName
 type=$myDeviceType
 id=$myDeviceId
 auth-method=token
@@ -626,7 +633,7 @@ clientKeyPath=$clientKeyPath if useClientCertificates=1 otherwise leave blank
 
 ##### Return codes
 
-Following are the return codes in the *initialize* function
+Following are the return codes in the `initialize` function
 
 * CONFIG_FILE_ERROR   -3
 * MISSING_INPUT_PARAM   -4
@@ -635,8 +642,8 @@ Following are the return codes in the *initialize* function
 Connect
 -------
 
-After initializing the *iotfclient*, you can connect to the IBM Watson Internet of Things
-Platform by calling the *connectiotf_dm* function
+After initializing the `iotfclient`, you can connect to the IBM Watson Internet of Things
+Platform by calling the `connectiotf_dm` function
 
 ``` {.sourceCode .c}
 #include "devicemanagementclient.h"
@@ -662,7 +669,7 @@ Platform by calling the *connectiotf_dm* function
 
 ##### Return Codes
 
-The IoTF *connectiotf_dm* function return codes
+The IoTF `connectiotf_dm` function return codes
 
 * MQTTCLIENT_SUCCESS   0
 * MQTTCLIENT_FAILURE   -1
@@ -701,7 +708,7 @@ Note : meta data value must be a json string, for example :"{\"key\":\"string va
 Register Callback function
 ------------------------------------------------------------------
  To process the response of device management request we need to register a  callback function by calling the function
-*setManagedHandler_dm*. The commands are returned as
+`setManagedHandler_dm`. The commands are returned as
 
 -   Status - status of response
 -   requestId -  ID of the request to which the response is.
@@ -740,7 +747,7 @@ Following are the status code for the device Management response,
 Subscribe
 -----------------------------------------------------------------
 In order to get the response for the each manage device request we need to make an subscription to all the commands by calling
-*subscribeCommands_dm* function
+`subscribeCommands_dm` function
 ``` {.sourceCode .c}
 #include "devicemanagementclient.h"
  ...
@@ -775,7 +782,7 @@ Refer to the  <a href="https://docs.internetofthings.ibmcloud.com/devices/device
 Unmanage
 -----------------------------------------------------
 
-A device can invoke sendUnmanageRequest() function when it no longer needs to be managed. The IBM Watson Internet of Things Platform will no longer send new device management requests to this device and all device management requests from this device will be rejected other than a **Manage device** request.
+A device can invoke `sendUnmanageRequest()` function when it no longer needs to be managed. The IBM Watson Internet of Things Platform will no longer send new device management requests to this device and all device management requests from this device will be rejected other than a **Manage device** request.
 
 ``` {.sourceCode .c}
 	publishUnManageEvent(reqId);
@@ -788,7 +795,7 @@ Refer to the  <a href="https://docs.internetofthings.ibmcloud.com/devices/device
 Location Update
 -----------------------------------------------------
 
-Devices that can determine their location can choose to notify the IBM Watson Internet of Things Platform about location changes. The Device can invoke one of the overloaded updateLocation() function to update the location of the device.
+Devices that can determine their location can choose to notify the IBM Watson Internet of Things Platform about location changes. The Device can invoke one of the overloaded `updateLocation()` function to update the location of the device.
 
 ``` {.sourceCode .c}
   updateLocation(77.5667,12.9667, 0,updatedDateTime, 0, reqId) ;
@@ -806,7 +813,7 @@ Refer to the documentation <a href="https://docs.internetofthings.ibmcloud.com/d
 Append/Clear Error Codes
 -----------------------------------------------
 
-Devices can choose to notify the IBM Watson Internet of Things Platform about changes in their error status. The Device can invoke  addErrorCode() function to add the current error code to Watson IoT Platform.
+Devices can choose to notify the IBM Watson Internet of Things Platform about changes in their error status. The Device can invoke  `addErrorCode()` function to add the current error code to Watson IoT Platform.
 
 ``` {.sourceCode .c}
 	addErrorCode(121 , reqId);
@@ -814,7 +821,7 @@ Devices can choose to notify the IBM Watson Internet of Things Platform about ch
 As shown, this function accepts following 3 parameters,
 * *ErrorCode* error code to be added as integer.
 * *request ID* out value of Request Id for the current request.
-Also, the ErrorCodes can be cleared from IBM Watson Internet of Things Platform by calling the clearErrorCodes() function as follows:
+Also, the ErrorCodes can be cleared from IBM Watson Internet of Things Platform by calling the `clearErrorCodes()` function as follows:
 
 ``` {.sourceCode .c}
 	clearErrorCodes(reqId);
@@ -824,7 +831,7 @@ As shown, this function accepts following 2 parameters,
 
 Append/Clear Log messages
 -----------------------------
-Devices can choose to notify the IBM Watson Internet of Things Platform about changes by adding a new log entry. Log entry includes a log messages, its time stamp and severity, as well as an optional base64-encoded binary diagnostic data. The Devices can invoke addLog() function to send log messages,
+Devices can choose to notify the IBM Watson Internet of Things Platform about changes by adding a new log entry. Log entry includes a log messages, its time stamp and severity, as well as an optional base64-encoded binary diagnostic data. The Devices can invoke `addLog()` function to send log messages,
 
 ``` {.sourceCode .c}
 addLog("test","",1, reqId);
@@ -835,7 +842,7 @@ As shown, this function accepts following 2 parameters,
 * *request ID* out value of Request Id for the current request.
 
 
-Also, the log messages can be cleared from IBM Watson Internet of Things Platform by calling the clearLogs() function as follows:
+Also, the log messages can be cleared from IBM Watson Internet of Things Platform by calling the `clearLogs()` function as follows:
 
 ``` {.sourceCode .c}
 clearLogs(reqId);
@@ -949,7 +956,7 @@ Handling commands
 When the device client connects, it automatically subscribes to any
 command for this device. To process specific commands you need to
 register a command callback function by calling the function
-*setCommandHandler*. The commands are returned as
+`setCommandHandler`. The commands are returned as
 
 -   commandName - name of the command invoked
 -   format - e.g json, xml
@@ -974,7 +981,7 @@ void myCallback (char* commandName, char* format, void* payload)
  ....
 ```
 
-**Note** : *yield_dm* function must be called periodically to receive commands.
+**Note** : `yield_dm` function must be called periodically to receive commands.
 
 
 
@@ -988,3 +995,5 @@ Disconnects the client and releases the connections
 ```
 As shown, this function accepts following parameter,
 * *ManagedDevice struct Instance* which has all the device info filled
+
+----------------------------------------------------------------------------------------------------------------------------
