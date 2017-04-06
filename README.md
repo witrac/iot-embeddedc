@@ -6,17 +6,17 @@ Embedded C client for interacting with the IBM Watson Internet of Things Platfor
 Supported Features
 ------------------
 
-| Feature   |      Supported?      |
-|----------|:-------------:|
-| Device connectivity |  &#10004; |
-| Gateway connectivity |    &#10004;   |
-| SSL/TLS | &#10004; |
-| Client side Certificate based authentication | &#10004; |
-| Device Management for Devices | &#10004; |
-| Device Management for Gateway | &#10008; |
-| Device Management Extension(DME) | &#10008; |
-| Auto reconnect | &#10008; |
-| Event/Command publish using MQTT| &#10004; |
+| Feature   |      Supported?      |	Description	       |
+|----------|:--------------------:|:--------------------------:|
+| Device connectivity |  &#10004; | Connect your device(s) to Watson IoT Platform with ease using this library. For more information, refer to github documentation below.|
+| Gateway connectivity |    &#10004;   | Connect your gateway(s) to Watson IoT Platform with ease using this library. Refer to github documentation below for more details.
+| SSL/TLS | &#10004; | By default, this library connects your devices, gateways and applications securely to Watson IoT Platform registered service. Port 8883(default one) support secure connections using TLS with the MQTT. Also, note that the library uses port 1883(unsecured) to connect to the Quickstart service.
+| Client side Certificate based authentication | &#10004; | Supports Client Side Certificates based authentication. Refer to github documentation below for more details.
+| Device Management for Devices | &#10004; | Connects your device(s) as managed device(s) to Watson IoT Platform. Refer to github documentation below for more details.
+| Device Management for Gateway | &#10008; | Connects your gateway(s) as managed gateway(s) to Watson IoT Platform. Support needs to be added to library.
+| Device Management Extension(DME) | &#10008; | Provides support for custom device management actions. Support needs to be added to library.
+| Auto reconnect | &#10008; | Enables device/gateway/application to automatically reconnect to Watson IoT Platform while they are in a disconnected state. Support needs to be added to library.
+| Event/Command publish using MQTT| &#10004; | Enables device/gateway/application to publish messages using MQTT. Refer to github documentation below for more details.
 
 Getting the Source
 ------------------
