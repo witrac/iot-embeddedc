@@ -3,22 +3,20 @@
 #include <stddef.h>
 #include <setjmp.h>
 #include <cmocka.h>
-#include <malloc.h>
 #include "gatewayclient.h"
-#include "testUtils.c"
 
-//GatewayClient gatewayClient;
+//iotfclient  gatewayClient;
 
 /* Mock of the connect to IoTF.
 
-extern int connectGateway(GatewayClient *client);
-int connectGateway(GatewayClient *client){
+extern int connectGateway(iotfclient  *client);
+int connectGateway(iotfclient  *client){
 	(void)client;
 	return mock_type(int);
 }
 
 void testMockconnectGateway(){
-	GatewayClient client;
+	iotfclient  client;
 	char *devCfgPath="/home/lharalak/EclipseWorkspace/iot-embeddedc/test/device.cfg";
 
 	//Connect in registered mode
@@ -33,119 +31,118 @@ void testMockconnectGateway(){
 
 }
 */
-struct config gatewayConfig;
-struct config deviceConfig;
 
 void testInitialize(){
-	GatewayClient client;
-	char devCfgPath[1024];
-	char gatewayCfgPath[1024];
-	getDeviceCfgFilePath(devCfgPath);
-	getGatewayCfgFilePath(gatewayCfgPath);
+	iotfclient  client;
+	Config gatewayConfig;
+	char *gatewayCfgPath;
 
-	get_config(devCfgPath, &deviceConfig);
+	getTestCfgFilePath(&gatewayCfgPath,"gateway.cfg");
+
 	get_config(gatewayCfgPath, &gatewayConfig);
 
 	//orgID , deviceType and deviceId cannot be NULL
-	assert_int_equal(
-			initializeGateway(&client, NULL, gatewayConfig.domain, gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
-			MISSING_INPUT_PARAM);
-	assert_int_equal(
-                        initializeGateway(&client, gatewayConfig.org, NULL, gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
-                        SUCCESS);
-	assert_int_equal(
-			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, NULL, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken),
-			MISSING_INPUT_PARAM);
-	assert_int_equal(
-			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, gatewayConfig.type, NULL, gatewayConfig.authmethod, gatewayConfig.authtoken),
-			MISSING_INPUT_PARAM);
+	assert_int_equal(initialize(&client, NULL, gatewayConfig.domain,
+	        gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod,
+	        gatewayConfig.authtoken,NULL,0,NULL,NULL,NULL,1),MISSING_INPUT_PARAM);
 
+	assert_int_equal(initialize(&client, gatewayConfig.org, gatewayConfig.domain, NULL,
+		gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken,
+		NULL,0,NULL,NULL,NULL,1),MISSING_INPUT_PARAM);
+
+	assert_int_equal(initialize(&client, gatewayConfig.org, gatewayConfig.domain,
+		gatewayConfig.type, NULL, gatewayConfig.authmethod, gatewayConfig.authtoken,
+		NULL,0,NULL,NULL,NULL,1),MISSING_INPUT_PARAM);
+
+	//domain can be NULL
+	assert_int_equal(initialize(&client, gatewayConfig.org, NULL, gatewayConfig.type,
+		gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken,
+		NULL,0,NULL,NULL,NULL,1),SUCCESS);
+
+
+	//auth-token and auth-method cannot be NULL
+	assert_int_equal(initialize(&client, gatewayConfig.org, gatewayConfig.domain,
+		gatewayConfig.type, gatewayConfig.id, NULL, gatewayConfig.authtoken,
+		NULL,0,NULL,NULL,NULL,1),MISSING_INPUT_PARAM);
+
+	assert_int_equal(initialize(&client, gatewayConfig.org, gatewayConfig.domain,
+		gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, NULL,
+		NULL,0,NULL,NULL,NULL,1),MISSING_INPUT_PARAM);
+
+	//CA Certificate, Client Certificate and Client Key cannot be NULL when useClientCertificates = 1
+	assert_int_equal(initialize(&client, gatewayConfig.org, gatewayConfig.domain,
+		gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken,
+		NULL,1,NULL,"ClientCertPath","ClientKeyPath",1),MISSING_INPUT_PARAM);
+
+	assert_int_equal(initialize(&client, gatewayConfig.org, gatewayConfig.domain,
+		gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken,
+		NULL,1,"RootCACertPath",NULL,"ClientKeyPath",1),MISSING_INPUT_PARAM);
+
+	assert_int_equal(initialize(&client, gatewayConfig.org, gatewayConfig.domain,
+		gatewayConfig.type, gatewayConfig.id, gatewayConfig.authmethod, gatewayConfig.authtoken,
+		NULL,1,"RootCACertPath","ClientCertPath",NULL,1),MISSING_INPUT_PARAM);
 
 	//Successful Initialization
-	assert_int_equal(
-			initializeGateway(&client, gatewayConfig.org, gatewayConfig.domain, gatewayConfig.type,
-			gatewayConfig.id, gatewayConfig.authmethod,
-					gatewayConfig.authtoken), SUCCESS);
+	assert_int_equal(initialize(&client, gatewayConfig.org, gatewayConfig.domain, gatewayConfig.type,
+		gatewayConfig.id, gatewayConfig.authmethod,gatewayConfig.authtoken, "ServerCertPath", 1,
+		"RootCACertPath","ClientCertPath","ClientKeyPath",1), SUCCESS);
+
+	//Free allocated memory
+	free(gatewayCfgPath);
 }
 
 void testInitializeConfigfile(){
-	GatewayClient client;
-	char gatewayCfgPath[256];
-	getGatewayCfgFilePath(gatewayCfgPath);
+	iotfclient  client;
+	char *gatewayCfgPath;
+	getTestCfgFilePath(&gatewayCfgPath,"gateway.cfg");
 
 	//Invalid Config File
-	assert_int_not_equal(initializeGateway_configfile(&client,"dummyConfig.cfg"),SUCCESS);
+	assert_int_equal(initialize_configfile(&client,"dummyConfig.cfg",1),CONFIG_FILE_ERROR);
 
-	//Valid Config File with null values
-    assert_int_equal(initializeGateway_configfile(&client,gatewayCfgPath),SUCCESS);
+	//Valid Config File
+        assert_int_equal(initialize_configfile(&client,gatewayCfgPath,1),SUCCESS);
+
+	//Free allocated memory
+	free(gatewayCfgPath);
 }
 
-//Command Handler
-void myCallback (char* type, char* id, char* commandName, char *format, void* payload, size_t payloadlen)
-{
-	printf("------------------------------------\n" );
-	printf("Type is : %s\n", type);
-	printf("Id is : %s\n", id);
-	printf("The command received :: %s\n", commandName);
-	printf("format : %s\n", format);
-	printf("Payload is : %.*s\n", (int)payloadlen, (char *)payload);
-	printf("------------------------------------\n" );
-}
+void testGatewayConnectAndPublishWithoutCerts(){
+	iotfclient  client;
+	char *gatewayCfgPath;
 
-void testGateway(){
-	GatewayClient client;
-	char devCfgPath[256];
-	getGatewayCfgFilePath(devCfgPath);
+	//Connecting in registered mode with out Client Side Certificates
+	getTestCfgFilePath(&gatewayCfgPath,"gateway.cfg");
+	assert_int_equal(initialize_configfile(&client,gatewayCfgPath,1),SUCCESS);
+	assert_int_equal(connectiotf(&client),0);
 
-	printf("getGatewayCfgFilePath:%s\n",devCfgPath);
-	//Client is not connected yet
-	assert_int_not_equal(isGatewayConnected(&client),1);
-
-	//Connect in registered mode
-	assert_int_equal(initializeGateway_configfile(&client,devCfgPath),SUCCESS);
-	assert_int_equal(connectGateway(&client),0);
-
-	//Client is connected
-	assert_int_equal(isGatewayConnected(&client),1);
-
-	unsigned char *payload = "{ \"d\" : { \"temp\" : 34 }}";
-
-	setGatewayCommandHandler(&client, myCallback);
-	subscribeToGatewayCommands(&client);
-	subscribeToDeviceCommands(&client, deviceConfig.type, deviceConfig.id, "+", "+", 0);
-
-	assert_int_equal(publishGatewayEvent(&client,"status","json", payload , QOS0),0);
-
-	assert_int_equal(publishDeviceEvent(&client, deviceConfig.type, deviceConfig.id,"status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0),0);
-
-	//Construct message data for Reboot
-	MessageData md;
-	int topicLen = 70;
-	int loadLen = 30;
-
-	MQTTString topicName;
-	char topicstr[150];
-	sprintf(topicstr,"iot-2/type/%s/id/%s/cmd/command/fmt/json",deviceConfig.type,deviceConfig.id);
-	topicName.lenstring.data = topicstr;
-	topicName.lenstring.len = topicLen;
-
-	MQTTMessage msg;
-	msg.payload = "{\"temp\":\"43\"}";
-	msg.payloadlen = loadLen;
-	md.message = &msg;
-	md.topicName = &topicName;
-
-	messageArrived(&md);
-
-	assert_int_equal(gatewayYield(&client, 10), 0);
-
-	assert_int_equal(reconnect_delay(1), 3);
-	assert_int_equal(reconnect_delay(11), 60);
-	assert_int_equal(reconnect_delay(21), 600);
-	retry_connection(&client);
+	//Gateway Client is connected
+	assert_int_equal(isConnected(&client),1);
 
 	//Disconnect the client
-	disconnectGateway(&client);
+	assert_int_equal(disconnectGateway(&client),0);
+	free(gatewayCfgPath);
+}
+
+void testGatewayConnectAndPublishWithCerts(){
+	iotfclient  client;
+	char *gatewayCfgPath;
+
+	//Connecting in registered mode with Client Side Certificates should succeed
+	getTestCfgFilePath(&gatewayCfgPath,"gateway_with_csc.cfg");
+	assert_int_equal(initialize_configfile(&client,gatewayCfgPath,1),SUCCESS);
+	assert_int_equal(connectiotf(&client),0);
+
+	//Client is connected
+	assert_int_equal(isConnected(&client),1);
+
+	//publishGatewayEvent & publishDeviceEvent
+	assert_int_equal(publishGatewayEvent(&client,"status","json", "{\"d\" : {\"temp\" : 34 }}" , QOS0),0);
+	assert_int_equal(publishDeviceEvent(&client, "attached", "testGatewayPublish","status","json",
+								"{\"d\" : {\"temp\" : 34 }}", QOS0),0);
+
+	//Disconnect the client
+	//assert_int_equal(disconnectGateway(&client),0);
+	free(gatewayCfgPath);
 }
 
 int main(void)
@@ -153,15 +150,15 @@ int main(void)
 	const struct CMUnitTest tests[] = {
         cmocka_unit_test(testInitialize),
         cmocka_unit_test(testInitializeConfigfile),
-		cmocka_unit_test(testGateway)
+	cmocka_unit_test(testGatewayConnectAndPublishWithoutCerts),
+	cmocka_unit_test(testGatewayConnectAndPublishWithCerts),
     };
-
-	if(getenv("CTEST_HOME")!=NULL){
-	  printf("\n CTEST_HOME set to path %s\n",getenv("CTEST_HOME"));
-	  return cmocka_run_group_tests(tests, NULL, NULL);
-	}
-	else {
-	  printf("\n Error while setting CTEST_HOME variable....");
-	  return -1;
-	}
+    if(isEMBDCHomeDefined()){
+      printf("\n IOT_EMBDC_HOME set to path %s\n",getenv("IOT_EMBDC_HOME"));
+      return cmocka_run_group_tests(tests, NULL, NULL);
+    }
+    else {
+      printf("\n IOT_EMBDC_HOME Environment Variable not set");
+      return -1;
+    }
 }

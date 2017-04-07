@@ -12,11 +12,10 @@
  *
  * Contributors:
  *    Jeffrey Dare - initial implementation and API implementation
+ *    Lokesh Haralakatta - Added required changes to use Client Side certificates
  *******************************************************************************/
 
-#include <stdio.h>
-#include <signal.h>
-#include "iotfclient.h"
+#include "deviceclient.h"
 
 volatile int interrupt = 0;
 
@@ -40,15 +39,28 @@ int main(int argc, char const *argv[])
 {
 	int rc = -1;
 
-	Iotfclient client;
+	iotfclient  client;
 
 	//catch interrupt signal
 	signal(SIGINT, sigHandler);
 	signal(SIGTERM, sigHandler);
 
-	char *configFilePath = "./device.cfg";
+	char* configFilePath;
 
-	rc = initialize_configfile(&client, configFilePath);
+	if(isEMBDCHomeDefined()){
+
+	    getSamplesPath(&configFilePath);
+	    configFilePath = realloc(configFilePath,strlen(configFilePath)+15);
+	    strcat(configFilePath,"device.cfg");
+        }
+	else{
+	    printf("IOT_EMBDC_HOME is not defined\n");
+	    printf("Define IOT_EMBDC_HOME to client library path to execute samples\n");
+	    return -1;
+        }
+
+	rc = initialize_configfile(&client, configFilePath,0);
+	free(configFilePath);
 
 	if(rc != SUCCESS){
 		printf("initialize failed and returned rc = %d.\n Quitting..", rc);
@@ -65,20 +77,22 @@ int main(int argc, char const *argv[])
 		return 0;
 	}
 
-	setCommandHandler(&client, myCallback);
+	if(!client.isQuickstart){
+	    subscribeCommands(&client);
+	    setCommandHandler(&client, myCallback);
+        }
 
-	while(!interrupt) 
+	while(!interrupt)
 	{
 		printf("Publishing the event stat with rc ");
 		rc= publishEvent(&client, "status","json", "{\"d\" : {\"temp\" : 34 }}", QOS0);
 		printf(" %d\n", rc);
-		yield(&client, 1000);
+		yield(&client,1000);
 		sleep(2);
 	}
 
 	printf("Quitting!!\n");
 
 	disconnect(&client);
-
 	return 0;
 }

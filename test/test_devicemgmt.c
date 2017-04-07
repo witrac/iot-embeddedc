@@ -9,59 +9,72 @@
 #include <stddef.h>
 #include <setjmp.h>
 #include <cmocka.h>
-#include <malloc.h>
 #include "devicemanagementclient.h"
-#include "testUtils.c"
-#include <time.h>
 
 //Iotfclient *pclient;
 void populateMgmtConfig();
 
 
 void testInitialize(){
-	struct config deviceconfig;
-	char devCfgPath[1024];
-	getDeviceCfgFilePath(devCfgPath);
+	Config deviceconfig;
+	char *devCfgPath;
 
+	getTestCfgFilePath(&devCfgPath,"device.cfg");
 	get_config(devCfgPath, &deviceconfig);
+	free(devCfgPath);
 
 
-    //orgID , deviceType and deviceId cannot be NULL
-	assert_int_equal(
-			initialize_dm( NULL, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
-			MISSING_INPUT_PARAM);
-	assert_int_equal(
-			initialize_dm( deviceconfig.org, NULL, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
-			SUCCESS);
-	assert_int_equal(
-			initialize_dm( deviceconfig.org, deviceconfig.domain, NULL, deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken),
-			MISSING_INPUT_PARAM);
-	assert_int_equal(
-			initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type, NULL, deviceconfig.authmethod, deviceconfig.authtoken),
-			MISSING_INPUT_PARAM);
+        //orgID , deviceType and deviceId cannot be NULL
+	assert_int_equal(initialize_dm( NULL, deviceconfig.domain, deviceconfig.type, deviceconfig.id,
+		deviceconfig.authmethod, deviceconfig.authtoken,NULL,0,NULL,NULL,NULL),MISSING_INPUT_PARAM);
+
+	assert_int_equal(initialize_dm( deviceconfig.org, deviceconfig.domain, NULL, deviceconfig.id,
+		deviceconfig.authmethod, deviceconfig.authtoken,NULL,0,NULL,NULL,NULL),MISSING_INPUT_PARAM);
+
+	assert_int_equal(initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type, NULL,
+		deviceconfig.authmethod, deviceconfig.authtoken,NULL,0,NULL,NULL,NULL),MISSING_INPUT_PARAM);
+
+	//Domain can be NULL
+	assert_int_equal(initialize_dm(deviceconfig.org, NULL, deviceconfig.type, deviceconfig.id,
+		deviceconfig.authmethod, deviceconfig.authtoken,NULL,0,NULL,NULL,NULL),SUCCESS);
+
 
 	//In registered mode, authmethod and authtoken cannot be NULL
-	assert_int_equal(
-			initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, NULL, deviceconfig.authtoken),
-			MISSING_INPUT_PARAM);
-	assert_int_equal(
-			initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type, deviceconfig.id, deviceconfig.authmethod, NULL),
-			MISSING_INPUT_PARAM);
+	assert_int_equal(initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type,
+		deviceconfig.id, NULL, deviceconfig.authtoken,NULL,0,NULL,NULL,NULL),MISSING_INPUT_PARAM);
+
+	assert_int_equal(initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type,
+		deviceconfig.id, deviceconfig.authmethod, NULL,NULL,0,NULL,NULL,NULL),MISSING_INPUT_PARAM);
 
 	//In quickstart mode, authmethod and authtoken can be NULL
-	assert_int_equal(
-			initialize_dm( "quickstart", deviceconfig.domain, deviceconfig.type, deviceconfig.id, NULL, NULL),
-			SUCCESS);
+	assert_int_equal(initialize_dm( "quickstart", deviceconfig.domain, deviceconfig.type, deviceconfig.id,
+					NULL, NULL,NULL,0,NULL,NULL,NULL),SUCCESS);
 
+	//RootCACertPath,ClientCertPath and ClientKeyPath can not be NULL when useClientCertificates = 1
+	assert_int_equal(initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type,
+		                        deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,
+					NULL,1,NULL,"ClientCertPath","ClientKeyPath"), MISSING_INPUT_PARAM);
+
+	assert_int_equal(initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type,
+					deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,
+					NULL,1,"RootCACertPath",NULL,"ClientKeyPath"), MISSING_INPUT_PARAM);
+
+	assert_int_equal(initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type,
+					deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,
+					NULL,1,"RootCACertPath","ClientCertPath",NULL), MISSING_INPUT_PARAM);
 	//Successful Initialization
-	assert_int_equal(
-			initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type,deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken), SUCCESS);
+	assert_int_equal(initialize_dm( deviceconfig.org, deviceconfig.domain, deviceconfig.type,
+					deviceconfig.id, deviceconfig.authmethod, deviceconfig.authtoken,
+					"serverCertPath",1,"RootCACertPath","ClientCertPath","ClientKeyPath"),
+					SUCCESS);
+	//Release the memory allocated for config
+	freeConfig(&(dmClient.deviceClient.cfg));
 }
 
 void testInitializeConfigfile(){
 	ManagedDevice client;
-	char devCfgPath[256];
-	getDeviceCfgFilePath(devCfgPath);
+	char *devCfgPath;
+	getTestCfgFilePath(&devCfgPath,"device.cfg");
 
 	//Invalid Config File
 	assert_int_not_equal(initialize_configfile_dm("dummyConfig.cfg"),SUCCESS);
@@ -70,13 +83,14 @@ void testInitializeConfigfile(){
 	//assert_int_equal(initialize_configfile(nullCfgPath),CONFIG_FILE_ERROR);
 
 	//Valid Config File with null values
-    assert_int_equal(initialize_configfile_dm(devCfgPath),SUCCESS);
+    	assert_int_equal(initialize_configfile_dm(devCfgPath),SUCCESS);
+	freeConfig(&(dmClient.deviceClient.cfg));
+	free(devCfgPath);
 }
 
 void testConnectIotf(){
-	ManagedDevice client;
-	char devCfgPath[256];
-	getDeviceCfgFilePath(devCfgPath);
+	char *devCfgPath;
+	getTestCfgFilePath(&devCfgPath,"device_with_csc.cfg");
 
 	//Client is not connected yet
 	assert_int_not_equal(isConnected_dm(),1);
@@ -88,29 +102,34 @@ void testConnectIotf(){
 	//Client is connected
 	assert_int_equal(isConnected_dm(),1);
 
+	//Disconnect the client
+	disconnect_dm();
+
 	//Connect in quickstart mode
-	assert_int_equal(initialize_dm("quickstart", "internetofthings.ibmcloud.com", "sample", "first", NULL, NULL),SUCCESS);
-	assert_int_equal(connectiotf_dm(),1);
+	assert_int_equal(initialize_dm("quickstart", "internetofthings.ibmcloud.com", "sample", "first",
+					NULL, NULL, NULL, 0, NULL, NULL, NULL),SUCCESS);
+	assert_int_equal(connectiotf_dm(),0);
 
 	//Client is connected
 	assert_int_equal(isConnected_dm(),1);
 
 	//Disconnect the client
 	disconnect_dm();
+
 }
 
 static int setup(){
 	int rc=-1;
-	char devCfgPath[256];
-	getDeviceCfgFilePath(devCfgPath);
+	char *devCfgPath;
+	getTestCfgFilePath(&devCfgPath,"device_with_csc.cfg");
 	rc = initialize_configfile_dm(devCfgPath);
-
+	free(devCfgPath);
 	return rc;
 }
 
 static int teardown(){
 	int rc=-1;
-    rc=disconnect_dm();
+    	rc=disconnect_dm();
 	return rc;
 }
 
@@ -149,13 +168,14 @@ void rebootCallBack (char* reqID, char* action, void* payload)
 	//Reboot custom code needs to be added based on the platform the application is running
 	//After Rebooting the device Manage request needs to be sent to the platform to successfully complete the action
 	//So this program needs to be kept in the bashrc so that once the system reboots Manage event will be sent and the action will be successful.
-	/*#if defined(_WIN32) || defined(_WIN64)
-		system("C:\\WINDOWS\\System32\\shutdown -r");
-	#else
-		system("sudo shutdown -r now");
-	#endif*/
+	//#if defined(_WIN32) || defined(_WIN64)
+        //	system("C:\\WINDOWS\\System32\\shutdown -r");
+	//#else
+	//	system("sudo shutdown -r now");
+	//#endif
 	printf("------------------------------------\n" );
 }
+
 
 void factoryResetCallBack (char* reqID, char* action, void* payload)
 {
@@ -164,9 +184,7 @@ void factoryResetCallBack (char* reqID, char* action, void* payload)
 	printf("action : %s\n", action);
 	printf("Payload is : %s\n", (char *)payload);
 
-	/**
-	* This sample doesn't support factory reset, so respond accordingly
-	*/
+	// This sample doesn't support factory reset, so respond accordingly
 	int rc = changeState(FACTORYRESET_NOTSUPPORTED);
 	printf("Factory reset is not supported in this sample\n" );
 	printf("------------------------------------\n" );
@@ -217,9 +235,9 @@ void testManage(){
 	clearErrorCodes(reqId);
 	assert_string_not_equal(reqId, test);
 
-	strcpy(reqId, test);
-	addLog("test","",1, reqId);
-	assert_string_not_equal(reqId, test);
+	//strcpy(reqId, test);
+	//addLog("test","",1, reqId);
+	//assert_string_not_equal(reqId, test);
 
 	strcpy(reqId, test);
 	clearLogs(reqId);
@@ -230,8 +248,7 @@ void testManage(){
 	time(&t);
 	struct tm* tt = localtime(&t);
 	char updatedDateTime[80];	//"2016-03-01T07:07:56.323Z"
-	strftime(updatedDateTime, 80, "%Y-%m-%dT%TZ",
-			&tt);
+	strftime(updatedDateTime, 80, "%Y-%m-%dT%TZ",&tt);
 	updateLocation(77.5667, 12.9667, 0, updatedDateTime, 0, reqId);
 	assert_string_not_equal(reqId, test);
 
@@ -287,7 +304,7 @@ void testDeviceActions(){
 	messageForAction(&md,1);
 
 	//Construct Factory reset request
-//rebootCallBack(reqId,action,payload);
+	//rebootCallBack(reqId,action,payload);
 
 	topicName.lenstring.data = "iotdm-1/mgmt/initiate/device/factory_reset";
 	topicName.lenstring.len = topicLen;
@@ -417,22 +434,20 @@ int main(void)
 	const struct CMUnitTest tests[] = {
         cmocka_unit_test(testInitialize),
         cmocka_unit_test(testInitializeConfigfile),
-		cmocka_unit_test(testConnectIotf),
-		//cmocka_unit_test(testMockConnectIotf),
-		cmocka_unit_test_setup_teardown(testPublishEvent,setup,teardown),
-		cmocka_unit_test_setup_teardown(testManage,setup,teardown),
-		cmocka_unit_test_setup_teardown(testDeviceActions,setup,teardown),
-		cmocka_unit_test_setup_teardown(testDeviceFirmwareActions,setup,teardown)
+	cmocka_unit_test(testConnectIotf),
+	cmocka_unit_test_setup_teardown(testPublishEvent,setup,teardown),
+	cmocka_unit_test_setup_teardown(testManage,setup,teardown),
+	cmocka_unit_test_setup_teardown(testDeviceActions,setup,teardown),
+	cmocka_unit_test_setup_teardown(testDeviceFirmwareActions,setup,teardown)
     };
-
-	if(getenv("CTEST_HOME")!=NULL){
-	  printf("\n CTEST_HOME set to path %s\n",getenv("CTEST_HOME"));
-	  return cmocka_run_group_tests(tests, NULL, NULL);
-	}
-	else {
-	  printf("\n Error while setting CTEST_HOME variable....");
-	  return -1;
-	}
+    if(isEMBDCHomeDefined()){
+      printf("\n IOT_EMBDC_HOME set to path %s\n",getenv("IOT_EMBDC_HOME"));
+      return cmocka_run_group_tests(tests, NULL, NULL);
+    }
+    else {
+      printf("\n IOT_EMBDC_HOME Environment Variable not set");
+      return -1;
+    }
 
 }
 
@@ -447,4 +462,3 @@ void populateMgmtConfig(){
 	strcpy(dmClient.DeviceData.deviceInfo.descriptiveLocation , "EGL C");
 	strcpy(dmClient.DeviceData.metadata.metadata ,"{}");
 }
-

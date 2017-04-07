@@ -12,13 +12,10 @@
  *
  * Contributors:
  *    Hari hara prasad  - initial implementation and API implementation
+ *    Lokesh Haralakatta - Added required changes to use Client Side certificates
  *******************************************************************************/
 
-#include <stdio.h>
-#include <signal.h>
 #include "devicemanagementclient.h"
-#include <time.h>
-
 
 void myCallback (char* commandName, char* format, void* payload)
 {
@@ -81,9 +78,22 @@ int main(int argc, char const *argv[])
 	int rc = -1;
 	int x=0;
 
-	char *configFilePath = "./device.cfg";
+	char *configFilePath;
+
+	if(isEMBDCHomeDefined()){
+
+	    getSamplesPath(&configFilePath);
+	    configFilePath = realloc(configFilePath,strlen(configFilePath)+15);
+	    strcat(configFilePath,"device.cfg");
+        }
+	else{
+	    printf("IOT_EMBDC_HOME is not defined\n");
+	    printf("Define IOT_EMBDC_HOME to client library path to execute samples\n");
+	    return -1;
+        }
 
 	rc = initialize_configfile_dm(configFilePath);
+	free(configFilePath);
 	if(rc != SUCCESS){
 		printf("initialize failed and returned rc = %d.\n Quitting..", rc);
 		scanf("%d",&x);

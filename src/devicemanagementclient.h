@@ -13,17 +13,16 @@
  * Contributors:
  *    Hari hara prasad Viswanathan, - initial implementation and API implementation
  *    Hari prasada Reddy P
- *
- *
+ *    Lokesh Haralakatta      - Added SSL/TLS support
+ *    Lokesh Haralakatta      - Added Client Side Certificates support
  *******************************************************************************/
 
 #ifndef DEVICEMANAGEMENTCLIENT_H_
 #define DEVICEMANAGEMENTCLIENT_H_
 
-#include "MQTTClient.h"
-#include "iotfclient.h"
-#include <ctype.h>
 #include <stdbool.h>
+#include "iotfclient.h"
+#include "deviceclient.h"
 
 //Macros for the device management requests
 #define MANAGE "iotdevice-1/mgmt/manage"
@@ -132,7 +131,7 @@ struct managedDevice{
 		bool bObserve;
 		char responseSubscription[50];
 		struct deviceData DeviceData;
-		struct iotfclient deviceClient;
+		iotfclient deviceClient;
 };
 typedef struct managedDevice ManagedDevice;
 ManagedDevice dmClient;
@@ -165,9 +164,19 @@ int initialize_configfile_dm(char *configFilePath);
 *
 * @param auth-token - API key token (required if auth-method is â€œtokenâ€�)
 *
+* @Param serverCertPath - Custom Server Certificate Path
+*
+* @Param useCerts - Flag to indicate whether to use client side certificates for authentication
+*
+* @Param rootCAPath - if useCerts is 1, Root CA certificate Path
+* @Param clientCertPath - if useCerts is 1, Client Certificate Path
+* @Param clientKeyPath - if useCerts is 1, Client Key Path
+*
 * @return int return code
 */
-int initialize_dm(char *orgId, char *domianName, char *deviceType, char *deviceId, char *authmethod, char *authToken);
+int initialize_dm(char *orgId, char *domianName, char *deviceType, char *deviceId,
+		char *authmethod,char *authToken,char *serverCertPath, int useCerts,
+		char *rootCACertPath, char *clientCertPath, char *clientKeyPath);
 
 /**
 * Function used to connect the device to IBM Watson IoT client
@@ -233,30 +242,30 @@ int disconnect_dm();
 
 /**
 * <p>Send a device manage request to Watson IoT Platform</p>
-* 
-* <p>A Device uses this request to become a managed device. 
-* It should be the first device management request sent by the 
-* Device after connecting to the IBM Watson IoT Platform. 
-* It would be usual for a device management agent to send this 
+*
+* <p>A Device uses this request to become a managed device.
+* It should be the first device management request sent by the
+* Device after connecting to the IBM Watson IoT Platform.
+* It would be usual for a device management agent to send this
 * whenever is starts or restarts.</p>
-* 
+*
 * <p>This method connects the device to Watson IoT Platform connect if its not connected already</p>
-* 
+*
 * @param client reference to the ManagedDevice
-* 
-* @param lifetime The length of time in seconds within 
+*
+* @param lifetime The length of time in seconds within
 *        which the device must send another Manage device request.
-*        if set to 0, the managed device will not become dormant. 
+*        if set to 0, the managed device will not become dormant.
 *        When set, the minimum supported setting is 3600 (1 hour).
-* 
+*
 * @param supportFirmwareActions Tells whether the device supports firmware actions or not.
 *        The device must add a firmware handler to handle the firmware requests.
-* 
+*
 * @param supportDeviceActions Tells whether the device supports Device actions or not.
 *        The device must add a Device action handler to handle the reboot and factory reset requests.
 *
 * @param reqId Function returns the reqId if the publish Manage request is successful.
-* 
+*
 * @return
 */
 void publishManageEvent(long lifetime, int supportFirmwareActions,
@@ -276,12 +285,12 @@ void publishUnManageEvent(char* reqId);
 
 /**
  * Update the location.
- * 
+ *
  * @param latitude	Latitude in decimal degrees using WGS84
  *
  * @param longitude Longitude in decimal degrees using WGS84
  *
- * @param elevation	Elevation in meters using WGS84 
+ * @param elevation	Elevation in meters using WGS84
  *
  * @param measuredDateTime	Date of location measurement in ISO8601 format
  *
@@ -301,7 +310,7 @@ void updateLocation(double latitude, double longitude, double elevation, char* m
  *
  * @param longitude Longitude in decimal degrees using WGS84
  *
- * @param elevation	Elevation in meters using WGS84 
+ * @param elevation	Elevation in meters using WGS84
  *
  * @param measuredDateTime	Date of location measurement in ISO8601 format
  *
@@ -341,7 +350,7 @@ void clearErrorCodes(char* reqId);
  *
  * @param message The Log message that needs to be added to the Watson IoT Platform.
  *
- * @param timestamp The Log timestamp 
+ * @param timestamp The Log timestamp
  *
  * @param data The optional diagnostic string data
  *
@@ -422,5 +431,18 @@ int changeFirmwareState(int state);
  *
  */
 int changeFirmwareUpdateState(int state);
+
+//util functions
+void onMessage(MessageData* md);
+void messageResponse(MessageData* md);
+void messageUpdate(MessageData* md);
+void messageObserve(MessageData* md);
+void messageCancel(MessageData* md);
+void messageForAction(MessageData* md, bool isReboot);
+void generateUUID(char* uuid_str);
+int publish(char* publishTopic, char* data);
+void getMessageFromReturnCode(int rc, char* msg);
+void messageFirmwareDownload(MessageData* md);
+void messageFirmwareUpdate(MessageData* md);
 
 #endif /* DEVICEMANAGEMENTCLIENT_H_ */
