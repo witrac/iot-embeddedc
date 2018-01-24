@@ -18,13 +18,29 @@ Supported Features
 | Auto reconnect | &#10008; | Enables device/gateway/application to automatically reconnect to Watson IoT Platform while they are in a disconnected state. Support needs to be added to library.
 | Event/Command publish using MQTT| &#10004; | Enables device/gateway/application to publish messages using MQTT. Refer to github documentation below for more details.
 
+
+Build Tools
+---------------
+1. Install `CMake` Utility if it's not already installed referring to the link - https://cmake.org/
+2. Check if `Unzip` works in the device, else install the same
+3. Check if `git` Utility has been installed, if it's not already installed referring to the link - https://git-scm.com/downloads
+4. Install `curl` Utility if it's not already installed referring to the link - https://curl.haxx.se/
+5. Install `cmocka` test suit, in case you want to test the library. The following steps explains how to install cmocka.    
+a. `curl -O https://git.cryptomilk.org/projects/cmocka.git/snapshot/cmocka-1.1.0.zip`  
+b. `unzip cmocka-1.1.0.zip`  
+c. `rm -f cmocka-1.1.0.zip`  
+d. `cd /home/cmocka-1.1.0/`  
+e. `mkdir build`  
+f. `cd /home/cmocka-1.1.0/build`  
+In case the above steps don't work, refer to the link - https://cmocka.org  
+
 Getting the Source
 ------------------
 Embedded C Client library source is available at github repository - https://github.com/ibm-watson-iot/iot-embeddedc.git
 
 Get the source from github repository: `git clone https://github.com/ibm-watson-iot/iot-embeddedc.git`
 
-We shoud now have a directory `iot-embeddedc`, which is our `IOT_EMBDC_HOME`.
+We should now have a directory `iot-embeddedc`, which is our `IOT_EMBDC_HOME`.
 
 Installing the Dependencies and Building the Library
 ----------------------------------------------------
@@ -35,28 +51,20 @@ The `setsup.sh` script installs listed dependencies under Dependencies Section a
 
 3. Create directory `build` within $IOT_EMBDC_HOME Path: `mkdir $IOT_EMBDC_HOME/build`
 4. Change to `$IOT_EMBDC_HOME/build` directory to build the library: `cd $IOT_EMBDC_HOME/build`
-5. Install `CMake` Utility if it's not already installed referring to the link - https://cmake.org/
 6. Run `CMake` to collect all required build details and to create Makefile: `cmake ..`
 7. Run make to build the library, samples and tests: `make`
 
 Dependencies
 ------------
-
-1.  [Embedded C MQTT Client 1.0.0]
-
-  [Embedded C MQTT Client 1.0.0]: https://github.com/eclipse/paho.mqtt.embedded-c/archive/v1.0.0.tar.gz
-
-
-2.  [mbed TLS 2.4.1]
-
-  [mbed TLS 2.4.1]: https://github.com/ARMmbed/mbedtls/archive/mbedtls-2.4.1.tar.gz
-
-3.  [cJSON]
-
-  [cJSON]: https://github.com/DaveGamble/cJSON/archive/master.zip
-
 Note:
-If the dependencies were not able to be installed with the script on the device, manually pull the dependencies from the links mentioned above and follow the steps in the setup.sh file for making the necessary changes.
+These dependencies are installed with the `setup.sh`  script. If for some reason, these dependencies did not get installed, manually pull the dependencies from the links mentioned below and follow the steps in the `setup.sh` file for making the necessary changes.
+1.  [Embedded C MQTT Client 1.0.0](https://github.com/eclipse/paho.mqtt.embedded-c/archive/v1.0.0.tar.gz)  
+
+2.  [mbed TLS 2.4.1](https://github.com/ARMmbed/mbedtls/archive/mbedtls-2.4.1.tar.gz)
+
+3.  [cJSON]( https://github.com/DaveGamble/cJSON/archive/master.zip)
+
+
 
 Embedded C Client Library - Devices
 ===================================
@@ -185,7 +193,7 @@ The IoTF `connectiotf` function return codes are as shown below:
 Handling commands
 -----------------
 
-When the device client connects in registered mode, to process specific commands, we need to subscribe to commands by calling the function `subscribeCommands` and then register a command callback function by calling the function `setCommandHandler`. 
+When the device client connects in registered mode, to process specific commands, we need to subscribe to commands by calling the function `subscribeCommands` and then register a command callback function by calling the function `setCommandHandler`.
 
 The commands are returned as:
 -   commandName - name of the command invoked
@@ -527,7 +535,7 @@ Disconnects the client, releases the connections and frees the memory
 
 Running the Device and Gateway Samples
 --------------------------------------
-There are couple of sample programs available in the samples directory under `$IOT_EMBDC_HOME` directory. Before running them, 
+There are couple of sample programs available in the samples directory under `$IOT_EMBDC_HOME` directory. Before running them,
 - Update the configuration files as described in the above sections.
 - To enable logging, set the envrionment variable IOT_EMBDC_LOGGING - `export IOT_EMBDC_LOGGING=ON`
 - If `IOT_EMBDC_HOME` is set, then `$IOT_EMBDC_HOME/iotclient.log` is used for logging otherwise `./iotclient.log` is used.
@@ -539,7 +547,7 @@ Run helloWorld sample being in the path `$IOT_EMBDC_HOME/build`:
 Run Device Sample being in the path `$IOT_EMBDC_HOME/build`:
 
 	./samples/sampleDevice
-	
+
 Run Gateway Sample being in the path `$IOT_EMBDC_HOME/build`:
 
 	./samples/sampleGateway
