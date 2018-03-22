@@ -6,22 +6,22 @@ mkdir tmp
 mkdir lib
 mkdir lib/mbedtls
 cd tmp
-echo "Downloading paho mqtt embedded-c v1.0.0 source ...."
-curl -LO https://github.com/eclipse/paho.mqtt.embedded-c/archive/v1.0.0.tar.gz
-tar -xvf v1.0.0.tar.gz
+echo "Downloading paho mqtt embedded-c v1.0.0-wtc.1 source ...."
+curl -LO https://github.com/witrac/paho.mqtt.embedded-c/archive/v1.0.0-wtc.1.tar.gz
+tar -xvf v1.0.0-wtc.1.tar.gz
 echo "Downloading cJSON master.zip ...."
 curl -LO https://github.com/DaveGamble/cJSON/archive/master.zip
 unzip master.zip
 echo "Downloading mbedTLS-2.4.1 source ...."
 curl -LO https://github.com/ARMmbed/mbedtls/archive/mbedtls-2.4.1.tar.gz
 tar -xvf mbedtls-2.4.1.tar.gz
-cd paho.mqtt.embedded-c-1.0.0/MQTTClient-C/src/
+cd paho.mqtt.embedded-c-1.0.0-wtc.1/MQTTClient-C/src/
 mv MQTTClient.h MQTTClient_old.h
 sed -e 's/""/"iotf_network_tls_wrapper.h"/' MQTTClient_old.h > MQTTClient.h
 cd -
 echo "Copying the necessary source files to lib"
-cp paho.mqtt.embedded-c-1.0.0/MQTTPacket/src/* ../lib/
-cp paho.mqtt.embedded-c-1.0.0/MQTTClient-C/src/MQTTClient.* ../lib/
+cp paho.mqtt.embedded-c-1.0.0-wtc.1/MQTTPacket/src/* ../lib/
+cp paho.mqtt.embedded-c-1.0.0-wtc.1/MQTTClient-C/src/MQTTClient.* ../lib/
 cp mbedtls-mbedtls-2.4.1/include/mbedtls/*.h ../lib/mbedtls
 cp mbedtls-mbedtls-2.4.1/library/*.c ../lib/
 cp cJSON-master/cJSON.* ../lib/
