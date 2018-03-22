@@ -1,4 +1,14 @@
 samples/helloWorld
 samples/sampleDevice
 samples/sampleGateway
+samples/sampleDMActions
+samples/sampleDMFirmwareActions
+samples/sampleDeviceManagement
 lib/
+Makefile
+CMakeCache.txt
+CTestTestfile.cmake
+cmake_install.cmake
+CMAkeFiles/
+*.so
+*.a
