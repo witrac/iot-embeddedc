@@ -9,9 +9,9 @@ cd tmp
 echo "Downloading paho mqtt embedded-c v1.0.0-wtc.1 source ...."
 curl -LO https://github.com/witrac/paho.mqtt.embedded-c/archive/v1.0.0-wtc.1.tar.gz
 tar -xvf v1.0.0-wtc.1.tar.gz
-echo "Downloading cJSON master.zip ...."
-curl -LO https://github.com/DaveGamble/cJSON/archive/master.zip
-unzip master.zip
+echo "Downloading cJSON v1.7.4.tar.gz.zip ...."
+curl -LO https://github.com/witrac/cJSON/archive/v1.7.4.tar.gz
+tar -xvf v1.7.4.tar.gz
 echo "Downloading mbedTLS-2.4.1 source ...."
 curl -LO https://github.com/ARMmbed/mbedtls/archive/mbedtls-2.4.1.tar.gz
 tar -xvf mbedtls-2.4.1.tar.gz
@@ -24,7 +24,7 @@ cp paho.mqtt.embedded-c-1.0.0-wtc.1/MQTTPacket/src/* ../lib/
 cp paho.mqtt.embedded-c-1.0.0-wtc.1/MQTTClient-C/src/MQTTClient.* ../lib/
 cp mbedtls-mbedtls-2.4.1/include/mbedtls/*.h ../lib/mbedtls
 cp mbedtls-mbedtls-2.4.1/library/*.c ../lib/
-cp cJSON-master/cJSON.* ../lib/
+cp cJSON-1.7.4/cJSON.* ../lib/
 cp ../lib_bk/CMakeLists.txt ../lib/
 cd ..
 echo "Removing the temporary files"
