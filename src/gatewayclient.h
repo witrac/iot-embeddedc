@@ -23,6 +23,10 @@
 
 #include "iotfclient.h"
 
+#if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
+extern "C" {
+#endif
+
 //Callback used to process commands
 typedef void (*commandCallback)(char* type, char* id, char* commandName, char *format,
               void* payload, size_t payloadlen);
@@ -96,5 +100,9 @@ void setGatewayCommandHandler(iotfclient *client, commandCallback cb);
 char *trim(char *str);
 int retry_connection(iotfclient  *client);
 int reconnect_delay(int i);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GATEWAYCLIENT_H_ */

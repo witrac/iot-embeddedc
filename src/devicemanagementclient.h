@@ -24,6 +24,10 @@
 #include "iotfclient.h"
 #include "deviceclient.h"
 
+#if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
+extern "C" {
+#endif
+
 //Macros for the device management requests
 #define MANAGE "iotdevice-1/mgmt/manage"
 #define UNMANAGE "iotdevice-1/mgmt/unmanage"
@@ -444,5 +448,9 @@ int publish(char* publishTopic, char* data);
 void getMessageFromReturnCode(int rc, char* msg);
 void messageFirmwareDownload(MessageData* md);
 void messageFirmwareUpdate(MessageData* md);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DEVICEMANAGEMENTCLIENT_H_ */

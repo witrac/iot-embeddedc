@@ -27,6 +27,10 @@
 #include "MQTTClient.h"
 #include "iotf_network_tls_wrapper.h"
 
+#if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
+extern "C" {
+#endif
+
 #define BUFFER_SIZE 1024
 
 enum errorCodes { CONFIG_FILE_ERROR = -3, MISSING_INPUT_PARAM = -4, QUICKSTART_NOT_SUPPORTED = -5 };
@@ -153,5 +157,9 @@ int retry_connection(iotfclient *client);
 int get_config(char * filename, Config * configstr);
 
 void freeConfig(Config *cfg);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* IOTCLIENT_H_ */

@@ -51,6 +51,10 @@
 
 #include "iotf_utils.h"
 
+#if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
+extern "C" {
+#endif
+
 //tls initialization paramaters
 typedef struct
 {
@@ -116,4 +120,9 @@ int tls_write(Network* n, unsigned char* buffer, int len, int timeout_ms);
 int tls_read(Network* n, unsigned char* buffer, int len, int timeout_ms);
 void teardown_tls(tls_init_params* tlsInitData, tls_connect_params* tlsConnectData);
 void freeTLSConnectData(tls_connect_params* tlsConnectData);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

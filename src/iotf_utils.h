@@ -21,6 +21,10 @@
  #include<stdio.h>
  #include<string.h>
 
+ #if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
+ extern "C" {
+ #endif
+
  #define LOG(logHeader,msg)       if(logger != NULL) fprintf(logger,"%s:%s\n",logHeader,msg);
  #define LOG_BUF 512
 
@@ -38,5 +42,9 @@
  void strCopy(char **dest, char *src);
  int reconnect_delay(int i);
  void freePtr(char* p);
+
+ #ifdef __cplusplus
+ }
+ #endif
 
  #endif

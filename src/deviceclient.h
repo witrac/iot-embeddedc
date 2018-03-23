@@ -18,6 +18,11 @@
  #define DEVICECLIENT_H_
 
  #include "iotfclient.h"
+
+ #if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
+ extern "C" {
+ #endif
+
  //Callback used to process device commands
  typedef void (*commandCallback)(char* commandName, char *format, void* payload);
 
@@ -53,5 +58,9 @@
  * @return int return code
  */
  void setCommandHandler(iotfclient *client, commandCallback cb);
+
+ #ifdef __cplusplus
+ }
+ #endif
 
  #endif /* End od DEVICECLIENT_H_ */
