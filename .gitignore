@@ -9,6 +9,6 @@ Makefile
 CMakeCache.txt
 CTestTestfile.cmake
 cmake_install.cmake
-CMAkeFiles/
+CMakeFiles/
 *.so
 *.a
