@@ -8,7 +8,7 @@ add_library(iotfdeviceclient deviceclient.c)
 add_library(iotfgatewayclient gatewayclient.c)
 add_library(iotfdevicemgmt devicemanagementclient.c)
 
-TARGET_LINK_LIBRARIES (iotf_network_tls_wrapper mbedcrypto mbedx509 mbedtls )
+TARGET_LINK_LIBRARIES (iotf_network_tls_wrapper mbedx509 mbedtls mbedcrypto )
 TARGET_LINK_LIBRARIES (iotfdeviceclient iotfclient iotf_utils iotf_network_tls_wrapper mqttlib)
 TARGET_LINK_LIBRARIES (iotfgatewayclient iotfclient iotf_utils iotf_network_tls_wrapper mqttlib)
 TARGET_LINK_LIBRARIES (iotfdevicemgmt iotfclient iotfdeviceclient cJSON iotf_utils iotf_network_tls_wrapper mqttlib)
