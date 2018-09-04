@@ -628,6 +628,7 @@ void freeConfig(Config *cfg){
        freePtr(cfg->id);
        freePtr(cfg->authmethod);
        freePtr(cfg->authtoken);
+       freePtr(cfg->serverCertPath);
        freePtr(cfg->rootCACertPath);
        freePtr(cfg->clientCertPath);
        freePtr(cfg->clientKeyPath);
