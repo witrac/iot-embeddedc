@@ -167,9 +167,12 @@ int initialize(iotfclient  *client, char *orgId, char* domainName, char *deviceT
        }
 
        strCopy(&configstr.org, orgId);
-       strCopy(&configstr.domain,"internetofthings.ibmcloud.com");
-       if(domainName != NULL)
+       if(domainName != NULL){
 	       strCopy(&configstr.domain, domainName);
+	   }
+	   else{
+           strCopy(&configstr.domain,"internetofthings.ibmcloud.com");
+	   }
        strCopy(&configstr.type, deviceType);
        strCopy(&configstr.id, deviceId);
 
