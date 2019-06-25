@@ -58,8 +58,7 @@ struct iotf_config
 typedef struct iotf_config Config;
 
 //iotfclient
-typedef struct
-{
+typedef struct {
        Network n;
        Client c;
        Config cfg;
